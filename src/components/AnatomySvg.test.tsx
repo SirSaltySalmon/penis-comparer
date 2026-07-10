@@ -22,6 +22,21 @@ describe("AnatomySvg", () => {
     return line;
   };
 
+  const getPathPoints = (path: Element): Array<[number, number]> => {
+    const values =
+      path
+        .getAttribute("d")
+        ?.match(/-?\d+(?:\.\d+)?/g)
+        ?.map(Number) ?? [];
+    const points: Array<[number, number]> = [];
+
+    for (let index = 0; index < values.length; index += 2) {
+      points.push([values[index], values[index + 1]]);
+    }
+
+    return points;
+  };
+
   it("renders the horizontal projection with a pubic-bone-to-tip length marker", () => {
     render(
       <AnatomySvg
@@ -33,8 +48,12 @@ describe("AnatomySvg", () => {
     );
 
     expect(
-      screen.getByRole("img", { name: "abstract measurement visual" }),
+      screen.getByRole("img", { name: /abstract measurement visual/i }),
     ).toHaveClass("anatomy-svg", "anatomy-svg--horizontal");
+    expect(screen.getByText(/horizontal estimated measurement visual/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/length 13\.12 cm, diameter 3\.71 cm, fat layer 1 cm/i),
+    ).toBeInTheDocument();
     expect(screen.getByText("length to tip")).toBeVisible();
     expect(screen.getByTestId("length-marker")).toHaveAttribute(
       "data-measures",
@@ -55,12 +74,13 @@ describe("AnatomySvg", () => {
     const marker = screen.getByTestId("length-marker");
     const markerLine = getOnlyLine(marker);
     const tipShape = screen.getByTestId("tip-shape");
-    const markerEndX = markerLine.getAttribute("x2");
-    const centerY = "260";
+    const markerEndX = Number(markerLine.getAttribute("x2"));
+    const tipPoints = getPathPoints(tipShape);
+    const maxTipX = Math.max(...tipPoints.map(([x]) => x));
 
     expect(marker).toHaveAttribute("data-measures", "pubic-bone-to-tip");
-    expect(markerEndX).not.toBeNull();
-    expect(tipShape.getAttribute("d")).toContain(`${markerEndX} ${centerY}`);
+    expect(maxTipX).toBe(markerEndX);
+    expect(tipPoints).toContainEqual([markerEndX, 260]);
   });
 
   it("renders the vertical mobile projection with calibrated scale and diameter labels", () => {
@@ -94,11 +114,31 @@ describe("AnatomySvg", () => {
     const marker = screen.getByTestId("length-marker");
     const markerLine = getOnlyLine(marker);
     const tipShape = screen.getByTestId("tip-shape");
-    const centerX = "178";
-    const markerEndY = markerLine.getAttribute("y2");
+    const markerEndY = Number(markerLine.getAttribute("y2"));
+    const tipPoints = getPathPoints(tipShape);
+    const minTipY = Math.min(...tipPoints.map(([, y]) => y));
 
     expect(marker).toHaveAttribute("data-measures", "pubic-bone-to-tip");
-    expect(markerEndY).not.toBeNull();
-    expect(tipShape.getAttribute("d")).toContain(`${centerX} ${markerEndY}`);
+    expect(minTipY).toBe(markerEndY);
+    expect(tipPoints).toContainEqual([178, markerEndY]);
+  });
+
+  it("keeps the vertical diameter marker inside the body above the pubic-bone reference", () => {
+    render(
+      <AnatomySvg
+        measurement={edgeCaseMeasurement}
+        orientation="vertical"
+        pxPerCm={20}
+        scaleStatus="calibrated"
+      />,
+    );
+
+    const marker = screen.getByTestId("diameter-marker");
+    const markerLine = getOnlyLine(marker);
+    const markerY = Number(marker.getAttribute("data-marker-y"));
+    const lineY = Number(markerLine.getAttribute("y1"));
+
+    expect(markerY).toBe(lineY);
+    expect(markerY).toBeLessThan(548);
   });
 });

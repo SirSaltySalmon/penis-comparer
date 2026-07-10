@@ -27,11 +27,31 @@ const scaledCm = (
 const statusLabel = (scaleStatus: ScaleStatus): string =>
   `${scaleStatus} scale`;
 
+const formatCm = (value: number): string =>
+  Number.isInteger(value) ? String(value) : value.toFixed(2);
+
+const getA11yText = (
+  orientation: AnatomySvgProps["orientation"],
+  measurement: MeasurementState,
+  scaleStatus: ScaleStatus,
+) => {
+  const titleId = `anatomy-svg-${orientation}-title`;
+  const descId = `anatomy-svg-${orientation}-desc`;
+
+  return {
+    titleId,
+    descId,
+    title: `abstract measurement visual - ${orientation} ${scaleStatus} measurement visual`,
+    desc: `length ${formatCm(measurement.lengthCm)} cm, diameter ${formatCm(measurement.diameterCm)} cm, fat layer ${formatCm(measurement.fatLayerCm)} cm`,
+  };
+};
+
 function HorizontalProjection({
   measurement,
   pxPerCm,
   scaleStatus,
 }: Omit<AnatomySvgProps, "orientation">) {
+  const a11y = getA11yText("horizontal", measurement, scaleStatus);
   const referenceX = 210;
   const centerY = 260;
   const lengthPx = scaledCm(measurement.lengthCm, pxPerCm, 120, 560);
@@ -49,8 +69,10 @@ function HorizontalProjection({
       className="anatomy-svg anatomy-svg--horizontal"
       viewBox="0 0 920 520"
       role="img"
-      aria-label="abstract measurement visual"
+      aria-labelledby={`${a11y.titleId} ${a11y.descId}`}
     >
+      <title id={a11y.titleId}>{a11y.title}</title>
+      <desc id={a11y.descId}>{a11y.desc}</desc>
       <rect className="svg-bg" width="920" height="520" rx="18" />
       <path className="svg-grid-soft" d="M80 140 H840 M80 260 H840 M80 380 H840" />
       <path
@@ -127,6 +149,7 @@ function VerticalProjection({
   pxPerCm,
   scaleStatus,
 }: Omit<AnatomySvgProps, "orientation">) {
+  const a11y = getA11yText("vertical", measurement, scaleStatus);
   const referenceY = 548;
   const centerX = 178;
   const lengthPx = scaledCm(measurement.lengthCm, pxPerCm, 150, 440);
@@ -138,15 +161,22 @@ function VerticalProjection({
   const bodyLength = referenceY - bodyTopY;
   const leftX = centerX - diameterPx / 2;
   const rightX = centerX + diameterPx / 2;
+  const diameterMarkerY = clamp(
+    bodyTopY + bodyLength / 2,
+    bodyTopY + 24,
+    referenceY - 24,
+  );
 
   return (
     <svg
       className="anatomy-svg anatomy-svg--vertical"
       viewBox="0 0 360 680"
       role="img"
-      aria-label="abstract measurement visual"
+      aria-labelledby={`${a11y.titleId} ${a11y.descId}`}
       data-testid="mobile-projection"
     >
+      <title id={a11y.titleId}>{a11y.title}</title>
+      <desc id={a11y.descId}>{a11y.desc}</desc>
       <rect className="svg-bg" width="360" height="680" rx="18" />
       <path className="svg-grid-soft" d="M54 160 H306 M54 300 H306 M54 440 H306" />
       <path className="svg-grid-strong" d="M92 96 V594 M178 96 V594 M264 96 V594" />
@@ -200,11 +230,15 @@ function VerticalProjection({
         length to tip
       </text>
 
-      <g className="svg-measure">
-        <line x1={leftX} y1={bodyTopY + 74} x2={rightX} y2={bodyTopY + 74} />
-        <path d={`M ${leftX} ${bodyTopY + 64} V ${bodyTopY + 84} M ${rightX} ${bodyTopY + 64} V ${bodyTopY + 84}`} />
+      <g
+        className="svg-measure"
+        data-testid="diameter-marker"
+        data-marker-y={diameterMarkerY}
+      >
+        <line x1={leftX} y1={diameterMarkerY} x2={rightX} y2={diameterMarkerY} />
+        <path d={`M ${leftX} ${diameterMarkerY - 10} V ${diameterMarkerY + 10} M ${rightX} ${diameterMarkerY - 10} V ${diameterMarkerY + 10}`} />
       </g>
-      <text className="svg-measure-label" x={centerX - 34} y={bodyTopY + 58}>
+      <text className="svg-measure-label" x={centerX - 34} y={diameterMarkerY - 16}>
         diameter
       </text>
 
