@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("desktop shows horizontal visual and shareable url state", async ({
-  page,
-}, testInfo) => {
+test("shows visual and shareable url state", async ({ page }) => {
   await page.goto("/");
 
   await expect(
@@ -17,11 +15,17 @@ test("desktop shows horizontal visual and shareable url state", async ({
   await expect(visibleVisual.getByText("length to tip").first()).toBeVisible();
 
   await page.getByRole("spinbutton", { name: "Length", exact: true }).fill("14");
-  await expect(page).toHaveURL(/l=14/);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("l"))
+    .toBe("14");
+});
 
-  if (testInfo.project.name === "desktop") {
-    await expect(page.locator(".anatomy-svg--horizontal")).toBeVisible();
-  }
+test("desktop uses horizontal projection", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "desktop-only assertion");
+
+  await page.goto("/");
+
+  await expect(page.locator(".anatomy-svg--horizontal")).toBeVisible();
 });
 
 test("mobile uses vertical projection", async ({ page }, testInfo) => {
