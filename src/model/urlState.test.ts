@@ -24,7 +24,25 @@ describe("url state", () => {
     expect(result.value.fatLayerCm).toBe(0.5);
     expect(result.value.color).toBe("#abcdef");
     expect(result.value.unitMode).toBe("imperial");
+    expect(result.value.presetId).toBe("custom");
     expect(result.invalidFields).toEqual([]);
+  });
+
+  it("resets blank numeric params to defaults", () => {
+    const result = parseUrlState("?f=");
+
+    expect(result.value.fatLayerCm).toBe(DEFAULT_MEASUREMENT.fatLayerCm);
+    expect(result.invalidFields).toEqual(["f"]);
+  });
+
+  it("resets whitespace numeric params but accepts explicit zero", () => {
+    const blankResult = parseUrlState("?f=%20%20");
+    const zeroResult = parseUrlState("?f=0");
+
+    expect(blankResult.value.fatLayerCm).toBe(DEFAULT_MEASUREMENT.fatLayerCm);
+    expect(blankResult.invalidFields).toEqual(["f"]);
+    expect(zeroResult.value.fatLayerCm).toBe(0);
+    expect(zeroResult.invalidFields).toEqual([]);
   });
 
   it("resets only invalid fields", () => {

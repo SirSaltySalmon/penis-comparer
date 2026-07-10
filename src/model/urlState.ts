@@ -61,6 +61,11 @@ function readNumber(
   const raw = params.get(paramName);
   if (raw === null) return;
 
+  if (raw.trim() === "") {
+    invalidFields.push(paramName);
+    return;
+  }
+
   const parsed = Number(raw);
   if (Number.isFinite(parsed)) {
     value[field] = parsed;
