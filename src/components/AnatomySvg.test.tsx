@@ -12,6 +12,16 @@ describe("AnatomySvg", () => {
     presetId: "custom" as const,
   };
 
+  const getOnlyLine = (container: HTMLElement): Element => {
+    const line = container.querySelector("line");
+
+    if (line?.tagName !== "line") {
+      throw new Error("Expected marker to contain a line");
+    }
+
+    return line;
+  };
+
   it("renders the horizontal projection with a pubic-bone-to-tip length marker", () => {
     render(
       <AnatomySvg
@@ -43,13 +53,14 @@ describe("AnatomySvg", () => {
     );
 
     const marker = screen.getByTestId("length-marker");
+    const markerLine = getOnlyLine(marker);
+    const tipShape = screen.getByTestId("tip-shape");
+    const markerEndX = markerLine.getAttribute("x2");
+    const centerY = "260";
 
     expect(marker).toHaveAttribute("data-measures", "pubic-bone-to-tip");
-    expect(marker).toHaveAttribute("data-marker-end-x");
-    expect(marker).toHaveAttribute("data-tip-x");
-    expect(marker.getAttribute("data-marker-end-x")).toBe(
-      marker.getAttribute("data-tip-x"),
-    );
+    expect(markerEndX).not.toBeNull();
+    expect(tipShape.getAttribute("d")).toContain(`${markerEndX} ${centerY}`);
   });
 
   it("renders the vertical mobile projection with calibrated scale and diameter labels", () => {
@@ -81,12 +92,13 @@ describe("AnatomySvg", () => {
     );
 
     const marker = screen.getByTestId("length-marker");
+    const markerLine = getOnlyLine(marker);
+    const tipShape = screen.getByTestId("tip-shape");
+    const centerX = "178";
+    const markerEndY = markerLine.getAttribute("y2");
 
     expect(marker).toHaveAttribute("data-measures", "pubic-bone-to-tip");
-    expect(marker).toHaveAttribute("data-marker-end-y");
-    expect(marker).toHaveAttribute("data-tip-y");
-    expect(marker.getAttribute("data-marker-end-y")).toBe(
-      marker.getAttribute("data-tip-y"),
-    );
+    expect(markerEndY).not.toBeNull();
+    expect(tipShape.getAttribute("d")).toContain(`${centerX} ${markerEndY}`);
   });
 });

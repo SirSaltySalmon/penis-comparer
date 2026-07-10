@@ -89,7 +89,8 @@ function HorizontalProjection({
       />
       <path
         className="svg-tip"
-        d={`M ${bodyEndX} ${topY} C ${bodyEndX + tipLength} ${topY + 6}, ${bodyEndX + tipLength} ${bottomY - 6}, ${bodyEndX} ${bottomY} Z`}
+        data-testid="tip-shape"
+        d={`M ${bodyEndX} ${topY} C ${bodyEndX + tipLength * 0.72} ${topY + 6}, ${tipX} ${centerY - diameterPx * 0.28}, ${tipX} ${centerY} C ${tipX} ${centerY + diameterPx * 0.28}, ${bodyEndX + tipLength * 0.72} ${bottomY - 6}, ${bodyEndX} ${bottomY} Z`}
       />
 
       <g
@@ -181,7 +182,8 @@ function VerticalProjection({
       />
       <path
         className="svg-tip"
-        d={`M ${leftX} ${bodyTopY} C ${leftX + 6} ${bodyTopY - tipLength}, ${rightX - 6} ${bodyTopY - tipLength}, ${rightX} ${bodyTopY} Z`}
+        data-testid="tip-shape"
+        d={`M ${leftX} ${bodyTopY} C ${leftX + 6} ${bodyTopY - tipLength * 0.72}, ${centerX - diameterPx * 0.28} ${tipY}, ${centerX} ${tipY} C ${centerX + diameterPx * 0.28} ${tipY}, ${rightX - 6} ${bodyTopY - tipLength * 0.72}, ${rightX} ${bodyTopY} Z`}
       />
 
       <g
