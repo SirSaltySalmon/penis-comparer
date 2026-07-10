@@ -32,3 +32,117 @@ select {
   color: #526173;
   max-width: 680px;
 }
+
+.anatomy-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  color: #17212b;
+}
+
+.anatomy-svg--horizontal {
+  aspect-ratio: 920 / 520;
+}
+
+.anatomy-svg--vertical {
+  aspect-ratio: 360 / 680;
+}
+
+.svg-bg {
+  fill: #f9fafb;
+}
+
+.svg-stage {
+  fill: rgba(255, 255, 255, 0.68);
+  stroke: #cfd8e3;
+  stroke-width: 2;
+}
+
+.svg-grid-strong,
+.svg-grid-soft {
+  fill: none;
+  pointer-events: none;
+}
+
+.svg-grid-strong {
+  stroke: #d8e0ea;
+  stroke-width: 1.5;
+}
+
+.svg-grid-soft {
+  stroke: #e8edf3;
+  stroke-width: 1;
+}
+
+.svg-status,
+.svg-small,
+.svg-measure-label {
+  fill: currentColor;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.svg-status {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.svg-small {
+  font-size: 14px;
+  font-weight: 600;
+  fill: #5f6e7f;
+}
+
+.svg-ruler,
+.svg-tick {
+  fill: none;
+  stroke: #64748b;
+  stroke-linecap: round;
+}
+
+.svg-ruler {
+  stroke-width: 3;
+}
+
+.svg-tick {
+  stroke-width: 2;
+}
+
+.svg-fat {
+  fill: #f2d2bf;
+  stroke: #d39a78;
+  stroke-width: 2;
+}
+
+.svg-bone {
+  stroke: #334155;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.svg-body {
+  stroke: rgba(23, 33, 43, 0.2);
+  stroke-width: 2;
+}
+
+.svg-tip {
+  fill: #c98278;
+  stroke: rgba(23, 33, 43, 0.2);
+  stroke-width: 2;
+}
+
+.svg-measure {
+  fill: none;
+  stroke: #0f766e;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.svg-measure-label {
+  font-size: 16px;
+  font-weight: 800;
+  fill: #0f766e;
+}
