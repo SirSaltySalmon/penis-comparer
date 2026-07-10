@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_MEASUREMENT } from "../model/measurement";
-import { AnatomySvg } from "./AnatomySvg";
+import {
+  AnatomySvg,
+  RULER_LABEL_MIN_SPACING_PX,
+  chooseRulerLabelInterval,
+} from "./AnatomySvg";
 
 describe("AnatomySvg", () => {
   const edgeCaseMeasurement = {
@@ -186,6 +190,51 @@ describe("AnatomySvg", () => {
     },
   );
 
+  it("chooses human-readable label intervals with documented minimum spacing", () => {
+    expect(RULER_LABEL_MIN_SPACING_PX).toBe(56);
+    expect(chooseRulerLabelInterval(96 / 2.54)).toBe(2);
+    expect(chooseRulerLabelInterval(20)).toBe(5);
+    expect(chooseRulerLabelInterval(3)).toBe(20);
+  });
+
+  it.each(["horizontal", "vertical"] as const)(
+    "keeps low-scale %s ruler labels separated and includes the range endpoint",
+    (orientation) => {
+      render(
+        <AnatomySvg
+          measurement={{
+            ...DEFAULT_MEASUREMENT,
+            lengthCm: 40,
+            presetId: "custom",
+          }}
+          orientation={orientation}
+          pxPerCm={3}
+          scaleStatus="calibrated"
+        />,
+      );
+      const labels = screen.getAllByTestId("ruler-label");
+      const positions = labels.map((label) =>
+        Number(label.getAttribute(orientation === "horizontal" ? "x" : "y")),
+      );
+
+      expect(labels.map((label) => label.textContent)).toEqual([
+        "0 cm",
+        "20 cm",
+        "40 cm",
+      ]);
+      expect(labels.map((label) => label.getAttribute("data-ruler-value"))).toEqual([
+        "0",
+        "20",
+        "40",
+      ]);
+      for (let index = 1; index < positions.length; index += 1) {
+        expect(Math.abs(positions[index] - positions[index - 1])).toBeGreaterThanOrEqual(
+          56,
+        );
+      }
+    },
+  );
+
   it.each(["horizontal", "vertical"] as const)(
     "uses exact %s diameter geometry across supported values",
     (orientation) => {
@@ -275,6 +324,7 @@ describe("AnatomySvg", () => {
     expect(screen.getByText("0 cm")).toBeInTheDocument();
     expect(screen.getByText("5 cm")).toBeInTheDocument();
     expect(screen.getByText("10 cm")).toBeInTheDocument();
+    expect(screen.getByText("14 cm")).toBeInTheDocument();
   });
 
   it("labels the vertical ruler upward from zero at the pubic-bone base", () => {
@@ -306,6 +356,7 @@ describe("AnatomySvg", () => {
     expect(screen.getByText("0 cm")).toBeInTheDocument();
     expect(screen.getByText("5 cm")).toBeInTheDocument();
     expect(screen.getByText("10 cm")).toBeInTheDocument();
+    expect(screen.getByText("14 cm")).toBeInTheDocument();
   });
 
   it.each(["horizontal", "vertical"] as const)(

@@ -13,7 +13,54 @@ const pixelsForCm = (cm: number, pxPerCm: number): number => cm * pxPerCm;
 const rulerValues = (lengthCm: number): number[] =>
   Array.from({ length: Math.ceil(lengthCm) + 1 }, (_, index) => index);
 
-const isMajorRulerValue = (value: number): boolean => value % 5 === 0;
+// "40 cm" is roughly 40px wide at the rendered 14px label size. The
+// additional clearance keeps adjacent labels readable across browser fonts.
+export const RULER_LABEL_MIN_SPACING_PX = 56;
+
+export function chooseRulerLabelInterval(pxPerCm: number): number {
+  if (!Number.isFinite(pxPerCm) || pxPerCm <= 0) return 1;
+
+  const requiredCm = RULER_LABEL_MIN_SPACING_PX / pxPerCm;
+  if (requiredCm <= 1) return 1;
+
+  const magnitude = 10 ** Math.floor(Math.log10(requiredCm));
+  for (const multiplier of [1, 2, 5, 10]) {
+    const candidate = multiplier * magnitude;
+    if (candidate >= requiredCm) return candidate;
+  }
+
+  return 10 * magnitude;
+}
+
+const getRulerLabelValues = (
+  lengthCm: number,
+  intervalCm: number,
+  pxPerCm: number,
+): number[] => {
+  const maximum = Math.ceil(lengthCm);
+  const values = [0];
+
+  for (let value = intervalCm; value <= maximum; value += intervalCm) {
+    values.push(value);
+  }
+
+  const lastValue = values.at(-1)!;
+  if (lastValue === maximum || maximum === 0) return values;
+
+  if (
+    (maximum - lastValue) * pxPerCm >= RULER_LABEL_MIN_SPACING_PX ||
+    values.length === 1
+  ) {
+    values.push(maximum);
+  } else {
+    values[values.length - 1] = maximum;
+  }
+
+  return values;
+};
+
+const isMajorRulerValue = (value: number, intervalCm: number): boolean =>
+  value % intervalCm === 0;
 
 const statusLabel = (scaleStatus: ScaleStatus): string =>
   `${scaleStatus} scale`;
@@ -60,8 +107,14 @@ function HorizontalProjection({
   const width = Math.ceil(
     Math.max(620, rulerEndX + 60, tipX + 150),
   );
-  const height = Math.ceil(rulerY + 55);
+  const height = Math.ceil(rulerY + 75);
   const ticks = rulerValues(measurement.lengthCm);
+  const labelInterval = chooseRulerLabelInterval(pxPerCm);
+  const labelValues = getRulerLabelValues(
+    measurement.lengthCm,
+    labelInterval,
+    pxPerCm,
+  );
 
   return (
     <svg
@@ -89,7 +142,11 @@ function HorizontalProjection({
         return (
           <line
             key={`grid-${value}`}
-            className={isMajorRulerValue(value) ? "svg-grid-strong" : "svg-grid-soft"}
+            className={
+              isMajorRulerValue(value, labelInterval)
+                ? "svg-grid-strong"
+                : "svg-grid-soft"
+            }
             x1={x}
             x2={x}
             y1="90"
@@ -109,23 +166,38 @@ function HorizontalProjection({
             className="svg-tick"
             x1={x}
             x2={x}
-            y1={rulerY - (isMajorRulerValue(value) ? 10 : 7)}
-            y2={rulerY + (isMajorRulerValue(value) ? 10 : 7)}
+            y1={
+              rulerY -
+              (isMajorRulerValue(value, labelInterval) ? 10 : 7)
+            }
+            y2={
+              rulerY +
+              (isMajorRulerValue(value, labelInterval) ? 10 : 7)
+            }
           />
         );
       })}
-      {ticks.filter(isMajorRulerValue).map((value) => (
-        <text
-          key={`label-${value}`}
-          className="svg-small"
-          data-testid="ruler-label"
-          x={referenceX + value * pxPerCm}
-          y={rulerY + 34}
-          textAnchor="middle"
-        >
-          {value} cm
-        </text>
-      ))}
+      {labelValues.map((value, index) => {
+        const previousValue = labelValues[index - 1];
+        const usesEndpointTrack =
+          previousValue !== undefined &&
+          (value - previousValue) * pxPerCm <
+            RULER_LABEL_MIN_SPACING_PX;
+
+        return (
+          <text
+            key={`label-${value}`}
+            className="svg-small"
+            data-testid="ruler-label"
+            data-ruler-value={value}
+            x={referenceX + value * pxPerCm}
+            y={rulerY + 34 + (usesEndpointTrack ? 22 : 0)}
+            textAnchor="middle"
+          >
+            {value} cm
+          </text>
+        );
+      })}
 
       <rect
         className="svg-fat"
@@ -211,6 +283,12 @@ function VerticalProjection({
   const height = Math.ceil(referenceY + fatPx + 80);
   const ticks = rulerValues(measurement.lengthCm);
   const rulerEndY = referenceY - rulerMaximum * pxPerCm;
+  const labelInterval = chooseRulerLabelInterval(pxPerCm);
+  const labelValues = getRulerLabelValues(
+    measurement.lengthCm,
+    labelInterval,
+    pxPerCm,
+  );
 
   return (
     <svg
@@ -238,7 +316,11 @@ function VerticalProjection({
         return (
           <line
             key={`grid-${value}`}
-            className={isMajorRulerValue(value) ? "svg-grid-strong" : "svg-grid-soft"}
+            className={
+              isMajorRulerValue(value, labelInterval)
+                ? "svg-grid-strong"
+                : "svg-grid-soft"
+            }
             x1="44"
             x2={width - 18}
             y1={referenceY - value * pxPerCm}
@@ -256,24 +338,39 @@ function VerticalProjection({
             data-testid="ruler-tick"
             data-ruler-value={value}
             className="svg-tick"
-            x1={rulerX - (isMajorRulerValue(value) ? 10 : 7)}
-            x2={rulerX + (isMajorRulerValue(value) ? 10 : 7)}
+            x1={
+              rulerX -
+              (isMajorRulerValue(value, labelInterval) ? 10 : 7)
+            }
+            x2={
+              rulerX +
+              (isMajorRulerValue(value, labelInterval) ? 10 : 7)
+            }
             y1={y}
             y2={y}
           />
         );
       })}
-      {ticks.filter(isMajorRulerValue).map((value) => (
-        <text
-          key={`label-${value}`}
-          className="svg-small"
-          data-testid="ruler-label"
-          x="30"
-          y={referenceY - value * pxPerCm + 5}
-        >
-          {value} cm
-        </text>
-      ))}
+      {labelValues.map((value, index) => {
+        const previousValue = labelValues[index - 1];
+        const usesEndpointTrack =
+          previousValue !== undefined &&
+          (value - previousValue) * pxPerCm <
+            RULER_LABEL_MIN_SPACING_PX;
+
+        return (
+          <text
+            key={`label-${value}`}
+            className="svg-small"
+            data-testid="ruler-label"
+            data-ruler-value={value}
+            x={usesEndpointTrack ? 86 : 30}
+            y={referenceY - value * pxPerCm + 5}
+          >
+            {value} cm
+          </text>
+        );
+      })}
 
       <rect
         className="svg-fat"

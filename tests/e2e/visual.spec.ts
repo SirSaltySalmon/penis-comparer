@@ -141,3 +141,44 @@ test("oversized mobile visual remains keyboard-scrollable", async ({
     .poll(() => region.evaluate((element) => element.scrollLeft))
     .toBeGreaterThan(0);
 });
+
+test("low calibrated scale keeps adjacent ruler labels separate", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("spinbutton", { name: /reference length/i }).fill("40");
+  await page.getByRole("slider", { name: /on-screen pixels/i }).fill("120");
+  await page.getByRole("button", { name: /apply calibration/i }).click();
+  const svg = page.locator("svg:visible").first();
+  await expect(svg.getByText("calibrated scale")).toBeVisible();
+
+  const result = await svg.evaluate((element) => {
+    const labels = Array.from(
+      element.querySelectorAll<SVGTextElement>('[data-testid="ruler-label"]'),
+    );
+    const boxes = labels.map((label) => label.getBoundingClientRect());
+    const adjacentOverlap = boxes.slice(1).some((box, index) => {
+      const previous = boxes[index];
+      return !(
+        previous.right <= box.left ||
+        box.right <= previous.left ||
+        previous.bottom <= box.top ||
+        box.bottom <= previous.top
+      );
+    });
+    const bounds = element.getBoundingClientRect();
+    const viewBox = element.viewBox.baseVal;
+    return {
+      adjacentOverlap,
+      labels: labels.map((label) => label.textContent),
+      pxPerCm: Number(element.dataset.pxPerCm),
+      cssToViewBoxRatio: bounds.width / viewBox.width,
+    };
+  });
+
+  expect(result.labels.length).toBeGreaterThanOrEqual(2);
+  expect(result.labels[0]).toBe("0 cm");
+  expect(result.adjacentOverlap).toBe(false);
+  expect(result.pxPerCm).toBeCloseTo(3, 6);
+  expect(result.cssToViewBoxRatio).toBeCloseTo(1, 6);
+});
