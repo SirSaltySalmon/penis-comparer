@@ -21,6 +21,9 @@ export function GuideDrawer() {
           </p>
           <ul>
             <li>
+              Measured penis should be fully erect
+            </li>
+            <li>
               Length is measured from pubic bone to the furthest tip, including the
               tip/glans.
             </li>

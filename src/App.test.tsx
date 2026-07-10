@@ -15,6 +15,10 @@ describe("App", () => {
 
   beforeEach(() => {
     window.history.replaceState(null, "", "/");
+    document.cookie = "physical_scale_v1=; Max-Age=0; Path=/";
+    Object.defineProperty(window.screen, "width", { configurable: true, value: 1440 });
+    Object.defineProperty(window.screen, "height", { configurable: true, value: 900 });
+    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 1.5 });
   });
 
   afterEach(() => {
@@ -116,6 +120,18 @@ describe("App", () => {
       .getAttribute("data-marker-end-x");
 
     expect(secondEndpoint).toBe(firstEndpoint);
+  });
+
+  it("accepts and remembers an unknown monitor's diagonal size", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByRole("spinbutton", { name: /monitor size/i }), "27");
+    await user.click(screen.getByRole("button", { name: /apply monitor size/i }));
+
+    expect(screen.getByText(/estimated from saved monitor size/i)).toBeVisible();
+    expect(document.cookie).toContain("physical_scale_v1=");
+    expect(screen.getByRole("button", { name: /forget saved scale/i })).toBeVisible();
   });
 
   it("renders the last valid measurement while an invalid draft is displayed", () => {

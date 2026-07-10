@@ -10,18 +10,41 @@ import { AnatomySvg } from "./components/AnatomySvg";
 import { CalibrationPanel } from "./components/CalibrationPanel";
 import { GuideDrawer } from "./components/GuideDrawer";
 import { MeasurementControls } from "./components/MeasurementControls";
+import { MonitorSizePanel } from "./components/MonitorSizePanel";
 import { validateMeasurement } from "./model/measurement";
-import { applyCalibration, estimateScale } from "./model/scale";
+import { applyCalibration, estimateMonitorScale, estimateScale, type ScaleEstimateInput, type ScaleInfo } from "./model/scale";
+import { clearSavedScale, readSavedScale, saveScale } from "./model/scaleCookie";
 import { parseUrlState, serializeUrlState } from "./model/urlState";
 
 type FullscreenMode = "none" | "native" | "fallback";
 
+function getScaleInput(): ScaleEstimateInput {
+  const userAgent = navigator.userAgent;
+  const isIos = /iPhone|iPad|iPod/i.test(userAgent);
+  const isAndroid = /Android/i.test(userAgent);
+  return {
+    screenWidthCss: window.screen.width,
+    screenHeightCss: window.screen.height,
+    devicePixelRatio: window.devicePixelRatio || 1,
+    platform: isIos ? "ios" : isAndroid ? "android" : "desktop",
+    userAgent,
+    isMobile: isIos || isAndroid || /Mobi/i.test(userAgent),
+  };
+}
+
+function scaleLabel(scale: ScaleInfo): string {
+  if (scale.source === "saved-calibration") return "Calibrated for this screen";
+  if (scale.source === "saved-monitor") return "Estimated from saved monitor size";
+  if (scale.deviceName) return `Estimated for ${scale.deviceName}`;
+  if (scale.source === "device-signature") return "Estimated from mobile display";
+  return "Uncalibrated estimate";
+}
+
 export default function App() {
   const parsed = useMemo(() => parseUrlState(window.location.search), []);
-  const baseScale = useMemo(
-    () => estimateScale({ devicePixelRatio: window.devicePixelRatio }),
-    [],
-  );
+  const scaleInput = useMemo(getScaleInput, []);
+  const automaticScale = useMemo(() => estimateScale(scaleInput), [scaleInput]);
+  const baseScale = useMemo(() => readSavedScale(scaleInput) ?? automaticScale, [automaticScale, scaleInput]);
   const [measurement, setMeasurement] = useState(parsed.value);
   const [renderedMeasurement, setRenderedMeasurement] = useState(parsed.value);
   const [scale, setScale] = useState(baseScale);
@@ -49,6 +72,23 @@ export default function App() {
     const query = serializeUrlState(measurement);
     window.history.replaceState(null, "", query);
   }, [hasValidationErrors, measurement]);
+
+  useEffect(() => {
+    type NavigatorWithHints = Navigator & {
+      userAgentData?: { getHighEntropyValues?: (hints: string[]) => Promise<{ model?: string }> };
+    };
+    const hints = (navigator as NavigatorWithHints).userAgentData;
+    if (!scaleInput.isMobile || !hints?.getHighEntropyValues) return;
+    let active = true;
+    hints.getHighEntropyValues(["model"]).then(({ model }) => {
+      if (!active || !model) return;
+      const refined = estimateScale({ ...scaleInput, deviceModel: model });
+      setScale((current) =>
+        current.source === "css-fallback" && refined.confidence !== "low" ? refined : current,
+      );
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [scaleInput]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -183,7 +223,7 @@ export default function App() {
           <p className="eyebrow"><a href="https://github.com/SirSaltySalmon/penis-comparer">GitHub</a></p>
           <h1>Penis Visualizer</h1>
           <p className="lede">
-            Renders a penis to scale, to validate claims or compare your penis to the average penis.
+            Renders an erect penis to scale, to validate claims or compare your penis to the average penis.
           </p>
         </div>
         {parsed.invalidFields.length > 0 && (
@@ -203,11 +243,14 @@ export default function App() {
           onKeyDown={moveVisualWithKeyboard}
         >
           <div className="visual-toolbar">
-            <p className="visual-instructions" id="visual-scroll-instructions">
-              {isFullscreen
-                ? "Drag to position the to-scale visual. Arrow keys make 10 px adjustments; hold Shift for 1 px."
-                : "Full screen this visual as needed if it extends beyond the frame."}
-            </p>
+            <div>
+              <p className="scale-summary" data-confidence={scale.confidence}>{scaleLabel(scale)}</p>
+              <p className="visual-instructions" id="visual-scroll-instructions">
+                {isFullscreen
+                  ? "Drag to position the to-scale visual. Arrow keys make 10 px adjustments; hold Shift for 1 px."
+                  : "Full screen this visual as needed if it extends beyond the frame."}
+              </p>
+            </div>
             <div className="visual-actions">
               {isFullscreen && (
                 <button
@@ -277,12 +320,32 @@ export default function App() {
 
       <GuideDrawer />
 
+      {!scaleInput.isMobile && scale.source === "css-fallback" && (
+        <MonitorSizePanel onApply={(diagonalInches) => {
+          const monitorScale = estimateMonitorScale(scaleInput, diagonalInches);
+          if (!monitorScale) return false;
+          setScale(monitorScale);
+          saveScale(scaleInput, monitorScale, "monitor-size", diagonalInches);
+          return true;
+        }} />
+      )}
+
       <CalibrationPanel
         basePxPerCm={baseScale.pxPerCm}
-        onCalibrate={(factor) =>
-          setScale(applyCalibration(baseScale, factor))
-        }
+        onCalibrate={(factor) => {
+          const calibrated = applyCalibration(baseScale, factor);
+          setScale(calibrated);
+          saveScale(scaleInput, calibrated, "manual-calibration");
+        }}
       />
+      {(scale.source === "saved-calibration" || scale.source === "saved-monitor") && (
+        <button className="forget-scale" type="button" onClick={() => {
+          clearSavedScale();
+          setScale(automaticScale);
+        }}>
+          Forget saved scale
+        </button>
+      )}
 
       <footer className="source-note">
         <a href="https://pubmed.ncbi.nlm.nih.gov/25487360/" target="_blank" rel="noreferrer">

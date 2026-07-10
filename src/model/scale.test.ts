@@ -2,6 +2,7 @@ import {
   CM_PER_INCH,
   CSS_PX_PER_INCH,
   applyCalibration,
+  estimateMonitorScale,
   estimateScale,
   getPixelsForCm,
   referencePixelsToCalibrationFactor,
@@ -14,6 +15,47 @@ describe("scale model", () => {
 
     expect(scale.status).toBe("estimated");
     expect(scale.pxPerCm).toBeCloseTo(CSS_PX_PER_INCH / CM_PER_INCH);
+  });
+
+  it("uses a recognized mobile signature", () => {
+    const scale = estimateScale({
+      screenWidthCss: 390,
+      screenHeightCss: 844,
+      devicePixelRatio: 3,
+      platform: "ios",
+      isMobile: true,
+    });
+
+    expect(scale.source).toBe("device-signature");
+    expect(scale.confidence).toBe("high");
+    expect(scale.deviceName).toMatch(/iPhone 12/);
+    expect(scale.pxPerCm).toBeGreaterThan(55);
+  });
+
+  it("prefers the most specific Android model token", () => {
+    const scale = estimateScale({
+      screenWidthCss: 412,
+      screenHeightCss: 892,
+      devicePixelRatio: 3.5,
+      platform: "android",
+      deviceModel: "Pixel 6 Pro",
+      isMobile: true,
+    });
+
+    expect(scale.source).toBe("device-model");
+    expect(scale.deviceName).toBe("Google Pixel 6–8 Pro");
+  });
+
+  it("matches the same device in landscape", () => {
+    const portrait = estimateScale({ screenWidthCss: 393, screenHeightCss: 852, devicePixelRatio: 3, platform: "ios", isMobile: true });
+    const landscape = estimateScale({ screenWidthCss: 852, screenHeightCss: 393, devicePixelRatio: 3, platform: "ios", isMobile: true });
+    expect(landscape.pxPerCm).toBeCloseTo(portrait.pxPerCm);
+  });
+
+  it("derives desktop scale from diagonal monitor size", () => {
+    const scale = estimateMonitorScale({ screenWidthCss: 2560, screenHeightCss: 1440, devicePixelRatio: 1.5 }, 27);
+    expect(scale?.source).toBe("saved-monitor");
+    expect(scale?.pxPerCm).toBeCloseTo(Math.hypot(2560, 1440) / 27 / 2.54);
   });
 
   it("converts centimeters to pixels for a scale", () => {
