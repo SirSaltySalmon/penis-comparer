@@ -38,9 +38,9 @@ function HorizontalProjection({
   const diameterPx = scaledCm(measurement.diameterCm, pxPerCm, 36, 120);
   const fatPx = scaledCm(measurement.fatLayerCm, pxPerCm, 14, 80);
   const tipLength = clamp(diameterPx * 0.82, 34, 86);
-  const bodyLength = Math.max(lengthPx - tipLength, 80);
   const tipX = referenceX + lengthPx;
-  const bodyEndX = referenceX + bodyLength;
+  const bodyEndX = tipX - tipLength;
+  const bodyLength = bodyEndX - referenceX;
   const topY = centerY - diameterPx / 2;
   const bottomY = centerY + diameterPx / 2;
 
@@ -96,6 +96,8 @@ function HorizontalProjection({
         className="svg-measure"
         data-testid="length-marker"
         data-measures="pubic-bone-to-tip"
+        data-marker-end-x={tipX}
+        data-tip-x={tipX}
       >
         <line x1={referenceX} y1="162" x2={tipX} y2="162" />
         <path d={`M ${referenceX} 152 V172 M ${tipX} 152 V172`} />
@@ -130,9 +132,9 @@ function VerticalProjection({
   const diameterPx = scaledCm(measurement.diameterCm, pxPerCm, 34, 104);
   const fatPx = scaledCm(measurement.fatLayerCm, pxPerCm, 14, 70);
   const tipLength = clamp(diameterPx * 0.82, 32, 76);
-  const bodyLength = Math.max(lengthPx - tipLength, 90);
   const tipY = referenceY - lengthPx;
-  const bodyTopY = referenceY - bodyLength;
+  const bodyTopY = tipY + tipLength;
+  const bodyLength = referenceY - bodyTopY;
   const leftX = centerX - diameterPx / 2;
   const rightX = centerX + diameterPx / 2;
 
@@ -186,6 +188,8 @@ function VerticalProjection({
         className="svg-measure"
         data-testid="length-marker"
         data-measures="pubic-bone-to-tip"
+        data-marker-end-y={tipY}
+        data-tip-y={tipY}
       >
         <line x1="304" y1={referenceY} x2="304" y2={tipY} />
         <path d={`M 294 ${referenceY} H314 M294 ${tipY} H314`} />
