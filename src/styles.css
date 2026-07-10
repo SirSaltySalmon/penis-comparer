@@ -146,3 +146,158 @@ select {
   font-weight: 800;
   fill: #0f766e;
 }
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #2f6f7a;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.visual-card,
+.controls,
+.guide,
+.calibration {
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  background: white;
+}
+
+.visual-card {
+  padding: 12px;
+}
+
+.side-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.controls,
+.guide,
+.calibration {
+  padding: 16px;
+}
+
+.controls {
+  display: grid;
+  gap: 12px;
+}
+
+.controls label,
+.calibration label {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.controls input,
+.controls select,
+.calibration input {
+  width: 100%;
+  border: 1px solid #c7d2df;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: white;
+  color: #17212b;
+}
+
+.input-with-unit {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.field-error {
+  color: #a33b2f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.primary-action,
+.guide__toggle,
+.calibration button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f6f7a;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.guide__body {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.notice {
+  border: 1px solid #c4d7dc;
+  border-radius: 6px;
+  background: #edf7f9;
+  color: #1f5862;
+  padding: 10px 12px;
+}
+
+.mobile-visual {
+  display: none;
+}
+
+.reference-line {
+  max-width: 100%;
+  height: 18px;
+  border-radius: 9px;
+  background: #2f6f7a;
+}
+
+.source-note {
+  margin-top: 20px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 820px) {
+  .hero,
+  .workspace {
+    display: block;
+  }
+
+  .side-stack {
+    margin-top: 14px;
+  }
+
+  .anatomy-svg--horizontal {
+    display: none;
+  }
+
+  .mobile-visual {
+    display: block;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+}
