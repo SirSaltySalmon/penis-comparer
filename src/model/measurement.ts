@@ -6,6 +6,8 @@ export interface MeasurementState {
   diameterCm: number;
   fatLayerCm: number;
   color: string;
+  fatColor: string;
+  tipColor: string;
   unitMode: UnitMode;
   presetId: PresetId;
 }
@@ -19,6 +21,8 @@ export interface MeasurementPreset extends MeasurementState {
 export type MeasurementErrors = Partial<Record<keyof MeasurementState, string>>;
 
 const DEFAULT_COLOR = "#d79b88";
+const DEFAULT_FAT_COLOR = "#f2d2bf";
+const DEFAULT_TIP_COLOR = "#c98278";
 const VEALE_LENGTH_CM = 13.12;
 const VEALE_CIRCUMFERENCE_CM = 11.66;
 const VEALE_DIAMETER_CM = circumferenceToDiameter(VEALE_CIRCUMFERENCE_CM);
@@ -29,6 +33,8 @@ export const PRESETS: Record<Exclude<PresetId, "custom">, MeasurementPreset> = {
     diameterCm: VEALE_DIAMETER_CM,
     fatLayerCm: 1,
     color: DEFAULT_COLOR,
+    fatColor: DEFAULT_FAT_COLOR,
+    tipColor: DEFAULT_TIP_COLOR,
     unitMode: "metric",
     presetId: "veale-2015",
     sourceLabel: "Veale et al. 2015 average",
@@ -40,6 +46,8 @@ export const PRESETS: Record<Exclude<PresetId, "custom">, MeasurementPreset> = {
     diameterCm: VEALE_DIAMETER_CM,
     fatLayerCm: 1,
     color: DEFAULT_COLOR,
+    fatColor: DEFAULT_FAT_COLOR,
+    tipColor: DEFAULT_TIP_COLOR,
     unitMode: "metric",
     presetId: "belladelli-2023-length",
     sourceLabel: "Belladelli et al. 2023 length benchmark",
@@ -53,6 +61,8 @@ export const DEFAULT_MEASUREMENT: MeasurementState = {
   diameterCm: PRESETS["veale-2015"].diameterCm,
   fatLayerCm: PRESETS["veale-2015"].fatLayerCm,
   color: PRESETS["veale-2015"].color,
+  fatColor: PRESETS["veale-2015"].fatColor,
+  tipColor: PRESETS["veale-2015"].tipColor,
   unitMode: "metric",
   presetId: "veale-2015",
 };
@@ -102,7 +112,15 @@ export function validateMeasurement(input: MeasurementState): {
   }
 
   if (!/^#[0-9a-fA-F]{6}$/.test(input.color)) {
-    errors.color = "Color must be a 6-digit hex value.";
+    errors.color = "Shaft color must be a 6-digit hex value.";
+  }
+
+  if (!/^#[0-9a-fA-F]{6}$/.test(input.fatColor)) {
+    errors.fatColor = "Fat layer color must be a 6-digit hex value.";
+  }
+
+  if (!/^#[0-9a-fA-F]{6}$/.test(input.tipColor)) {
+    errors.tipColor = "Tip color must be a 6-digit hex value.";
   }
 
   return { value: input, errors };

@@ -19,6 +19,7 @@ describe("App", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("links the cited studies from the educational source note", () => {
@@ -188,6 +189,25 @@ describe("App", () => {
     expect(new URLSearchParams(window.location.search).get("l")).toBe("15.24");
   });
 
+  it("updates both diagram rulers when the unit mode changes", () => {
+    render(<App />);
+    const units = screen.getByRole("combobox", { name: "Units" });
+
+    expect(screen.getAllByText("0 cm")).toHaveLength(2);
+
+    fireEvent.change(units, { target: { value: "imperial" } });
+
+    expect(screen.queryAllByText("0 cm")).toHaveLength(0);
+    expect(screen.getAllByText("0 in")).toHaveLength(2);
+    expect(screen.getAllByText("6 in")).toHaveLength(2);
+
+    const [firstTick, secondTick] = screen.getAllByTestId("ruler-tick");
+    expect(
+      Number(secondTick.getAttribute("x1")) -
+        Number(firstTick.getAttribute("x1")),
+    ).toBeCloseTo(96);
+  });
+
   it("exposes the overflow visual as a keyboard-focusable described region", () => {
     render(<App />);
 
@@ -199,7 +219,56 @@ describe("App", () => {
     expect(region).toHaveAttribute("tabindex", "0");
     expect(descriptionId).toBeTruthy();
     expect(document.getElementById(descriptionId!)).toHaveTextContent(
-      /focus this visual and use arrow keys to scroll/i,
+      /full screen this visual/i,
     );
+  });
+
+  it("opens a draggable full-screen fallback without changing visual scale", async () => {
+    vi.stubGlobal("PointerEvent", MouseEvent);
+    const user = userEvent.setup();
+    render(<App />);
+    const region = screen.getByRole("region", {
+      name: /scrollable measurement visual/i,
+    });
+    const originalScale = screen
+      .getAllByRole("img")[0]
+      .getAttribute("data-px-per-cm");
+
+    await user.click(
+      screen.getByRole("button", { name: /full screen visual/i }),
+    );
+
+    expect(region).toHaveClass("is-fullscreen");
+    expect(
+      screen.getByRole("button", { name: /exit full screen/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    const surface = screen.getByTestId("visual-pan-surface");
+    const viewport = surface.parentElement!;
+    fireEvent.pointerDown(viewport, {
+      button: 0,
+      pointerId: 1,
+      clientX: 10,
+      clientY: 20,
+    });
+    fireEvent.pointerMove(viewport, {
+      pointerId: 1,
+      clientX: 55,
+      clientY: 65,
+    });
+    fireEvent.pointerUp(viewport, { pointerId: 1 });
+
+    expect(surface).toHaveStyle({
+      transform: "translate3d(45px, 45px, 0)",
+    });
+    expect(screen.getAllByRole("img")[0]).toHaveAttribute(
+      "data-px-per-cm",
+      originalScale,
+    );
+
+    fireEvent.keyDown(region, { key: "ArrowRight" });
+    expect(surface).toHaveStyle({
+      transform: "translate3d(55px, 45px, 0)",
+    });
   });
 });

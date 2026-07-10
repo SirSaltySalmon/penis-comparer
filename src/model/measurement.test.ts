@@ -22,6 +22,8 @@ describe("measurement model", () => {
 
     expect(preset.lengthCm).toBe(13.12);
     expect(preset.diameterCm).toBeCloseTo(3.711, 3);
+    expect(preset.fatColor).toBe("#f2d2bf");
+    expect(preset.tipColor).toBe("#c98278");
     expect(preset.sourceLabel).toContain("Veale");
   });
 
@@ -39,6 +41,8 @@ describe("measurement model", () => {
       diameterCm: 3.7,
       fatLayerCm: 1,
       color: "#d79b88",
+      fatColor: "#f2d2bf",
+      tipColor: "#c98278",
       unitMode: "metric",
       presetId: "custom",
     });
@@ -53,6 +57,8 @@ describe("measurement model", () => {
       diameterCm: 50,
       fatLayerCm: -2,
       color: "pink",
+      fatColor: "beige",
+      tipColor: "blue",
       unitMode: "metric",
       presetId: "custom",
     });
@@ -61,5 +67,7 @@ describe("measurement model", () => {
     expect(result.errors.diameterCm).toContain("20 cm");
     expect(result.errors.fatLayerCm).toContain("0 cm or greater");
     expect(result.errors.color).toContain("hex");
+    expect(result.errors.fatColor).toContain("hex");
+    expect(result.errors.tipColor).toContain("hex");
   });
 });

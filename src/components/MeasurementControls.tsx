@@ -88,7 +88,9 @@ export function MeasurementControls({
       lengthCm: preset.lengthCm,
       diameterCm: preset.diameterCm,
       fatLayerCm: preset.fatLayerCm,
+      tipColor: preset.tipColor,
       color: preset.color,
+      fatColor: preset.fatColor,
       unitMode: value.unitMode,
       presetId,
     };
@@ -158,11 +160,37 @@ export function MeasurementControls({
         );
       })}
 
+<label htmlFor="measurement-tip-color">
+        Tip color
+        <input
+          id="measurement-tip-color"
+          aria-label="Tip color"
+          aria-invalid={Boolean(errors.tipColor)}
+          aria-describedby={
+            errors.tipColor ? "measurement-tip-color-error" : undefined
+          }
+          type="color"
+          value={value.tipColor}
+          onChange={(event) =>
+            onChange({
+              ...value,
+              tipColor: event.target.value,
+              presetId: "custom",
+            })
+          }
+        />
+      </label>
+      {errors.tipColor && (
+        <p className="field-error" id="measurement-tip-color-error">
+          {errors.tipColor}
+        </p>
+      )}
+
       <label htmlFor="measurement-color">
-        Color
+        Shaft color
         <input
           id="measurement-color"
-          aria-label="Color"
+          aria-label="Shaft color"
           aria-invalid={Boolean(errors.color)}
           aria-describedby={errors.color ? "measurement-color-error" : undefined}
           type="color"
@@ -175,6 +203,32 @@ export function MeasurementControls({
       {errors.color && (
         <p className="field-error" id="measurement-color-error">
           {errors.color}
+        </p>
+      )}
+
+      <label htmlFor="measurement-fat-color">
+        Fat layer color
+        <input
+          id="measurement-fat-color"
+          aria-label="Fat layer color"
+          aria-invalid={Boolean(errors.fatColor)}
+          aria-describedby={
+            errors.fatColor ? "measurement-fat-color-error" : undefined
+          }
+          type="color"
+          value={value.fatColor}
+          onChange={(event) =>
+            onChange({
+              ...value,
+              fatColor: event.target.value,
+              presetId: "custom",
+            })
+          }
+        />
+      </label>
+      {errors.fatColor && (
+        <p className="field-error" id="measurement-fat-color-error">
+          {errors.fatColor}
         </p>
       )}
 

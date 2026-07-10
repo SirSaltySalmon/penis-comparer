@@ -127,6 +127,154 @@ describe("AnatomySvg", () => {
     expect(screen.getByText("diameter")).toBeVisible();
   });
 
+  it.each(["horizontal", "vertical"] as const)(
+    "renders the %s tip using its independent color",
+    (orientation) => {
+      render(
+        <AnatomySvg
+          measurement={{
+            ...DEFAULT_MEASUREMENT,
+            color: "#112233",
+            tipColor: "#abcdef",
+            presetId: "custom",
+          }}
+          orientation={orientation}
+          pxPerCm={20}
+          scaleStatus="estimated"
+        />,
+      );
+
+      expect(screen.getByTestId("tip-shape")).toHaveAttribute("fill", "#abcdef");
+    },
+  );
+
+  const renderFatLayer = (
+    orientation: "horizontal" | "vertical",
+    fatLayerCm: number,
+  ) => {
+    const result = render(
+      <AnatomySvg
+        measurement={{
+          ...DEFAULT_MEASUREMENT,
+          fatLayerCm,
+          fatColor: "#abcdef",
+          presetId: "custom",
+        }}
+        orientation={orientation}
+        pxPerCm={20}
+        scaleStatus="estimated"
+      />,
+    );
+    const layer = screen.getByTestId("fat-layer");
+    const body = result.container.querySelector(".svg-body");
+    if (!body) throw new Error("Expected shaft body");
+
+    const rect = (element: Element) => ({
+      x: Number(element.getAttribute("x")),
+      y: Number(element.getAttribute("y")),
+      width: Number(element.getAttribute("width")),
+      height: Number(element.getAttribute("height")),
+    });
+    const value = { layer: rect(layer), body: rect(body) };
+    result.unmount();
+    return value;
+  };
+
+  it("renders a vertical fat layer across the horizontal shaft", () => {
+    const oneCm = renderFatLayer("horizontal", 1);
+    const twoCm = renderFatLayer("horizontal", 2);
+
+    expect(oneCm.layer.width).toBe(20);
+    expect(twoCm.layer.width).toBe(40);
+    expect(twoCm.layer.x).toBe(oneCm.layer.x);
+    expect(oneCm.layer.height).toBe(oneCm.body.height + 30);
+    expect(oneCm.layer.y).toBe(oneCm.body.y - 15);
+  });
+
+  it("renders a wider horizontal fat layer that grows upward on the vertical shaft", () => {
+    const oneCm = renderFatLayer("vertical", 1);
+    const twoCm = renderFatLayer("vertical", 2);
+
+    expect(oneCm.layer.height).toBe(20);
+    expect(twoCm.layer.height).toBe(40);
+    expect(twoCm.layer.y).toBe(oneCm.layer.y - 20);
+    expect(twoCm.layer.y + twoCm.layer.height).toBe(
+      oneCm.layer.y + oneCm.layer.height,
+    );
+    expect(oneCm.layer.width).toBe(oneCm.body.width + 30);
+    expect(oneCm.layer.x).toBe(oneCm.body.x - 15);
+  });
+
+  it.each(["horizontal", "vertical"] as const)(
+    "uses the selected fat color in the %s projection",
+    (orientation) => {
+      render(
+        <AnatomySvg
+          measurement={{
+            ...DEFAULT_MEASUREMENT,
+            fatColor: "#abcdef",
+            presetId: "custom",
+          }}
+          orientation={orientation}
+          pxPerCm={20}
+          scaleStatus="estimated"
+        />,
+      );
+      expect(screen.getByTestId("fat-layer")).toHaveAttribute(
+        "fill",
+        "#abcdef",
+      );
+    },
+  );
+
+  it("keeps vertical canvas space below the reference stable at fat-layer boundaries", () => {
+    const renderBoundary = (fatLayerCm: number) => {
+      const result = render(
+        <AnatomySvg
+          measurement={{
+            ...DEFAULT_MEASUREMENT,
+            fatLayerCm,
+            presetId: "custom",
+          }}
+          orientation="vertical"
+          pxPerCm={20}
+          scaleStatus="estimated"
+        />,
+      );
+      const svg = screen.getByTestId("mobile-projection");
+      const layer = screen.getByTestId("fat-layer");
+      const body = result.container.querySelector(".svg-body");
+      const referenceLabel = screen.getByText("pubic bone");
+      if (!body) throw new Error("Expected shaft body");
+
+      const bodyBottom =
+        Number(body.getAttribute("y")) + Number(body.getAttribute("height"));
+      const value = {
+        svgHeight: Number(svg.getAttribute("height")),
+        layerY: Number(layer.getAttribute("y")),
+        layerHeight: Number(layer.getAttribute("height")),
+        layerBottom:
+          Number(layer.getAttribute("y")) +
+          Number(layer.getAttribute("height")),
+        bodyBottom,
+        referenceLabelY: Number(referenceLabel.getAttribute("y")),
+      };
+      result.unmount();
+      return value;
+    };
+
+    const zero = renderBoundary(0);
+    const maximum = renderBoundary(10);
+
+    expect(zero.layerHeight).toBe(0);
+    expect(maximum.layerHeight).toBe(200);
+    expect(maximum.layerY).toBeGreaterThanOrEqual(0);
+    expect(zero.layerBottom).toBe(zero.bodyBottom);
+    expect(maximum.layerBottom).toBe(maximum.bodyBottom);
+    expect(maximum.svgHeight).toBe(zero.svgHeight);
+    expect(maximum.referenceLabelY).toBe(zero.referenceLabelY);
+  });
+
   it("keeps the vertical marker endpoint aligned with the visual tip for short large-diameter values", () => {
     render(
       <AnatomySvg

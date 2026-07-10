@@ -17,7 +17,7 @@ export function GuideDrawer() {
       {open && (
         <div className="guide__body" id="measurement-guide-body">
           <p>
-            This adult-only educational tool is a visualization, not medical advice.
+            This educational tool is only a visualization, not medical advice.
           </p>
           <ul>
             <li>

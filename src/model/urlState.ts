@@ -21,6 +21,8 @@ export function serializeUrlState(value: MeasurementState): string {
   params.set("d", String(roundForUrl(value.diameterCm)));
   params.set("f", String(roundForUrl(value.fatLayerCm)));
   params.set("c", value.color.replace("#", "").toLowerCase());
+  params.set("fc", value.fatColor.replace("#", "").toLowerCase());
+  params.set("tc", value.tipColor.replace("#", "").toLowerCase());
   params.set("u", value.unitMode);
   params.set("p", value.presetId);
 
@@ -35,7 +37,9 @@ export function parseUrlState(search: string): ParsedUrlState {
   readNumber(params, "l", "lengthCm", value, invalidFields);
   readNumber(params, "d", "diameterCm", value, invalidFields);
   readNumber(params, "f", "fatLayerCm", value, invalidFields);
-  readColor(params, value, invalidFields);
+  readColor(params, "c", "color", value, invalidFields);
+  readColor(params, "fc", "fatColor", value, invalidFields);
+  readColor(params, "tc", "tipColor", value, invalidFields);
   readUnitMode(params, value, invalidFields);
   readPresetId(params, value, invalidFields);
 
@@ -76,17 +80,19 @@ function readNumber(
 
 function readColor(
   params: URLSearchParams,
+  paramName: "c" | "fc" | "tc",
+  field: "color" | "fatColor" | "tipColor",
   value: MeasurementState,
   invalidFields: string[],
 ) {
-  const raw = params.get("c");
+  const raw = params.get(paramName);
   if (raw === null) return;
 
   const normalized = raw.startsWith("#") ? raw : `#${raw}`;
   if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
-    value.color = normalized.toLowerCase();
+    value[field] = normalized.toLowerCase();
   } else {
-    invalidFields.push("c");
+    invalidFields.push(paramName);
   }
 }
 
@@ -134,6 +140,12 @@ function resetField(field: keyof MeasurementState, value: MeasurementState) {
     case "color":
       value.color = DEFAULT_MEASUREMENT.color;
       break;
+    case "fatColor":
+      value.fatColor = DEFAULT_MEASUREMENT.fatColor;
+      break;
+    case "tipColor":
+      value.tipColor = DEFAULT_MEASUREMENT.tipColor;
+      break;
     case "unitMode":
       value.unitMode = DEFAULT_MEASUREMENT.unitMode;
       break;
@@ -149,6 +161,8 @@ function fieldToParam(field: keyof MeasurementState): string {
     diameterCm: "d",
     fatLayerCm: "f",
     color: "c",
+    fatColor: "fc",
+    tipColor: "tc",
     unitMode: "u",
     presetId: "p",
   };
