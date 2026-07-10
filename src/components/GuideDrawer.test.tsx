@@ -8,8 +8,16 @@ describe("GuideDrawer", () => {
     const user = userEvent.setup();
     render(<GuideDrawer />);
 
-    await user.click(screen.getByRole("button", { name: /how to measure/i }));
+    const toggle = screen.getByRole("button", { name: /how to measure/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "measurement-guide-body");
 
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById("measurement-guide-body")).toHaveClass(
+      "guide__body",
+    );
     expect(screen.getByText(/pubic bone to the furthest tip/i)).toBeInTheDocument();
     expect(screen.getByText(/not medical advice/i)).toBeInTheDocument();
   });

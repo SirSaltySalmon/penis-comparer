@@ -44,4 +44,35 @@ describe("MeasurementControls", () => {
 
     expect(onShare).toHaveBeenCalled();
   });
+
+  it("connects invalid fields to accessible error messages", () => {
+    render(
+      <MeasurementControls
+        value={DEFAULT_MEASUREMENT}
+        errors={{
+          lengthCm: "Length error",
+          diameterCm: "Diameter error",
+          fatLayerCm: "Fat layer error",
+          color: "Color error",
+        }}
+        onChange={vi.fn()}
+        onShare={vi.fn()}
+      />,
+    );
+
+    const fields = [
+      ["Length", "measurement-length", "measurement-length-error"],
+      ["Diameter", "measurement-diameter", "measurement-diameter-error"],
+      ["Fat layer", "measurement-fat-layer", "measurement-fat-layer-error"],
+      ["Color", "measurement-color", "measurement-color-error"],
+    ];
+
+    for (const [label, inputId, errorId] of fields) {
+      const input = screen.getByLabelText(label);
+      expect(input).toHaveAttribute("id", inputId);
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAttribute("aria-describedby", errorId);
+      expect(document.getElementById(errorId)).toBeInTheDocument();
+    }
+  });
 });
