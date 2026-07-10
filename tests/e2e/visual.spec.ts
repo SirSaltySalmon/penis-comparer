@@ -94,10 +94,50 @@ test("calibrated ruler and measurement geometry use the same CSS scale", async (
       : Number(lengthLine.getAttribute("y1")) - Number(lengthLine.getAttribute("y2"));
     const tickDelta = horizontal
       ? Number(ticks[1].getAttribute("x1")) - Number(ticks[0].getAttribute("x1"))
-      : Number(ticks[1].getAttribute("y1")) - Number(ticks[0].getAttribute("y1"));
+      : Number(ticks[0].getAttribute("y1")) - Number(ticks[1].getAttribute("y1"));
     return { lengthDelta, tickDelta };
   });
 
   expect(geometry.lengthDelta / 13.12).toBeCloseTo(geometry.tickDelta, 6);
   expect(geometry.tickDelta).toBeCloseTo(280 / 8.56, 6);
+});
+
+test("default mobile visual fits without horizontal panning", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "mobile-only assertion");
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/");
+  const region = page.getByRole("region", {
+    name: /scrollable measurement visual/i,
+  });
+
+  await expect(region).toBeVisible();
+  expect(
+    await region.evaluate((element) => element.scrollWidth <= element.clientWidth),
+  ).toBe(true);
+});
+
+test("oversized mobile visual remains keyboard-scrollable", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "mobile-only assertion");
+  await page.goto("/");
+  await page.getByRole("spinbutton", { name: "Diameter", exact: true }).fill("20");
+  const region = page.getByRole("region", {
+    name: /scrollable measurement visual/i,
+  });
+
+  await expect
+    .poll(() =>
+      region.evaluate((element) => element.scrollWidth > element.clientWidth),
+    )
+    .toBe(true);
+  await region.focus();
+  await expect(region).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+
+  await expect
+    .poll(() => region.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(0);
 });

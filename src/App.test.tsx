@@ -187,4 +187,19 @@ describe("App", () => {
     expect(length).toHaveValue(6);
     expect(new URLSearchParams(window.location.search).get("l")).toBe("15.24");
   });
+
+  it("exposes the overflow visual as a keyboard-focusable described region", () => {
+    render(<App />);
+
+    const region = screen.getByRole("region", {
+      name: /scrollable measurement visual/i,
+    });
+    const descriptionId = region.getAttribute("aria-describedby");
+
+    expect(region).toHaveAttribute("tabindex", "0");
+    expect(descriptionId).toBeTruthy();
+    expect(document.getElementById(descriptionId!)).toHaveTextContent(
+      /focus this visual and use arrow keys to scroll/i,
+    );
+  });
 });

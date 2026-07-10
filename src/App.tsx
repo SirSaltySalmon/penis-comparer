@@ -68,7 +68,16 @@ export default function App() {
       </header>
 
       <div className="workspace">
-        <section className="visual-card" aria-label="measurement visual">
+        <section
+          className="visual-card"
+          aria-label="Scrollable measurement visual"
+          aria-describedby="visual-scroll-instructions"
+          tabIndex={0}
+        >
+          <p className="visual-instructions" id="visual-scroll-instructions">
+            Focus this visual and use arrow keys to scroll when it extends beyond
+            the frame.
+          </p>
           <AnatomySvg
             measurement={renderedMeasurement}
             orientation="horizontal"

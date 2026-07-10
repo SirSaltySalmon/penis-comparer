@@ -11,7 +11,9 @@ export interface AnatomySvgProps {
 const pixelsForCm = (cm: number, pxPerCm: number): number => cm * pxPerCm;
 
 const rulerValues = (lengthCm: number): number[] =>
-  Array.from({ length: Math.floor(lengthCm) + 1 }, (_, index) => index);
+  Array.from({ length: Math.ceil(lengthCm) + 1 }, (_, index) => index);
+
+const isMajorRulerValue = (value: number): boolean => value % 5 === 0;
 
 const statusLabel = (scaleStatus: ScaleStatus): string =>
   `${scaleStatus} scale`;
@@ -87,7 +89,7 @@ function HorizontalProjection({
         return (
           <line
             key={`grid-${value}`}
-            className={value % 5 === 0 ? "svg-grid-strong" : "svg-grid-soft"}
+            className={isMajorRulerValue(value) ? "svg-grid-strong" : "svg-grid-soft"}
             x1={x}
             x2={x}
             y1="90"
@@ -103,17 +105,27 @@ function HorizontalProjection({
           <line
             key={`tick-${value}`}
             data-testid="ruler-tick"
+            data-ruler-value={value}
             className="svg-tick"
             x1={x}
             x2={x}
-            y1={rulerY - (value % 5 === 0 ? 10 : 7)}
-            y2={rulerY + (value % 5 === 0 ? 10 : 7)}
+            y1={rulerY - (isMajorRulerValue(value) ? 10 : 7)}
+            y2={rulerY + (isMajorRulerValue(value) ? 10 : 7)}
           />
         );
       })}
-      <text className="svg-small" x={referenceX} y={rulerY + 34}>
-        horizontal ruler
-      </text>
+      {ticks.filter(isMajorRulerValue).map((value) => (
+        <text
+          key={`label-${value}`}
+          className="svg-small"
+          data-testid="ruler-label"
+          x={referenceX + value * pxPerCm}
+          y={rulerY + 34}
+          textAnchor="middle"
+        >
+          {value} cm
+        </text>
+      ))}
 
       <rect
         className="svg-fat"
@@ -181,20 +193,24 @@ function VerticalProjection({
   const lengthPx = pixelsForCm(measurement.lengthCm, pxPerCm);
   const diameterPx = pixelsForCm(measurement.diameterCm, pxPerCm);
   const fatPx = pixelsForCm(measurement.fatLayerCm, pxPerCm);
-  const tipY = 100;
+  const rulerMaximum = Math.ceil(measurement.lengthCm);
+  const rulerOverhangPx =
+    (rulerMaximum - measurement.lengthCm) * pxPerCm;
+  const tipY = Math.max(100, rulerOverhangPx + 40);
   const referenceY = tipY + lengthPx;
-  const centerX = Math.max(178, diameterPx / 2 + 80);
+  const centerX = Math.max(140, diameterPx / 2 + 70);
   const tipLength = Math.min(lengthPx, diameterPx * 0.82);
   const bodyTopY = tipY + tipLength;
   const bodyLength = referenceY - bodyTopY;
   const leftX = centerX - diameterPx / 2;
   const rightX = centerX + diameterPx / 2;
   const diameterMarkerY = tipY + lengthPx / 2;
-  const rulerX = 34;
-  const markerX = rightX + 45;
-  const width = Math.ceil(Math.max(360, markerX + 90));
+  const rulerX = 16;
+  const markerX = rightX + 20;
+  const width = Math.ceil(Math.max(280, markerX + 30, rightX + 50));
   const height = Math.ceil(referenceY + fatPx + 80);
   const ticks = rulerValues(measurement.lengthCm);
+  const rulerEndY = referenceY - rulerMaximum * pxPerCm;
 
   return (
     <svg
@@ -212,54 +228,62 @@ function VerticalProjection({
       <rect className="svg-bg" width={width} height={height} rx="18" />
       <rect
         className="svg-stage"
-        x="54"
+        x="44"
         y="78"
-        width={width - 82}
+        width={width - 62}
         height={referenceY - 48}
         rx="14"
       />
       {ticks.map((value) => {
-        const y = tipY + value * pxPerCm;
         return (
           <line
             key={`grid-${value}`}
-            className={value % 5 === 0 ? "svg-grid-strong" : "svg-grid-soft"}
-            x1="54"
-            x2={width - 28}
-            y1={y}
-            y2={y}
+            className={isMajorRulerValue(value) ? "svg-grid-strong" : "svg-grid-soft"}
+            x1="44"
+            x2={width - 18}
+            y1={referenceY - value * pxPerCm}
+            y2={referenceY - value * pxPerCm}
           />
         );
       })}
 
-      <line className="svg-ruler" x1={rulerX} y1={tipY} x2={rulerX} y2={referenceY} />
+      <line className="svg-ruler" x1={rulerX} y1={referenceY} x2={rulerX} y2={rulerEndY} />
       {ticks.map((value) => {
-        const y = tipY + value * pxPerCm;
+        const y = referenceY - value * pxPerCm;
         return (
           <line
             key={`tick-${value}`}
             data-testid="ruler-tick"
+            data-ruler-value={value}
             className="svg-tick"
-            x1={rulerX - (value % 5 === 0 ? 10 : 7)}
-            x2={rulerX + (value % 5 === 0 ? 10 : 7)}
+            x1={rulerX - (isMajorRulerValue(value) ? 10 : 7)}
+            x2={rulerX + (isMajorRulerValue(value) ? 10 : 7)}
             y1={y}
             y2={y}
           />
         );
       })}
-      <text className="svg-small" x="58" y={tipY + 4}>
-        vertical ruler
-      </text>
+      {ticks.filter(isMajorRulerValue).map((value) => (
+        <text
+          key={`label-${value}`}
+          className="svg-small"
+          data-testid="ruler-label"
+          x="30"
+          y={referenceY - value * pxPerCm + 5}
+        >
+          {value} cm
+        </text>
+      ))}
 
       <rect
         className="svg-fat"
-        x={leftX - 35}
+        x={leftX - 25}
         y={referenceY}
-        width={diameterPx + 70}
+        width={diameterPx + 50}
         height={fatPx}
         rx="12"
       />
-      <line className="svg-bone" x1={leftX - 45} y1={referenceY} x2={rightX + 45} y2={referenceY} />
+      <line className="svg-bone" x1={leftX - 35} y1={referenceY} x2={rightX + 35} y2={referenceY} />
       <text className="svg-small" x={leftX} y={referenceY + fatPx + 28}>
         pubic/fat reference
       </text>
@@ -289,7 +313,7 @@ function VerticalProjection({
         <line x1={markerX} y1={referenceY} x2={markerX} y2={tipY} />
         <path d={`M ${markerX - 10} ${referenceY} H${markerX + 10} M${markerX - 10} ${tipY} H${markerX + 10}`} />
       </g>
-      <text className="svg-measure-label" x={rightX + 12} y={(referenceY + tipY) / 2 - 16}>
+      <text className="svg-measure-label" x={centerX} y={(referenceY + tipY) / 2 - 16} textAnchor="middle">
         length to tip
       </text>
 

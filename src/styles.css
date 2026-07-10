@@ -181,6 +181,22 @@ h1 {
   overflow: auto;
 }
 
+.visual-instructions {
+  position: sticky;
+  left: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 8px;
+  color: #526173;
+  font-size: 12px;
+}
+
+.visual-card:focus-visible {
+  outline: 3px solid #1f5862;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px #92c7d0;
+}
+
 .side-stack {
   display: grid;
   gap: 14px;
@@ -288,6 +304,10 @@ h1 {
 
   .mobile-visual {
     display: block;
+  }
+
+  .visual-card {
+    padding: 0;
   }
 
   h1 {

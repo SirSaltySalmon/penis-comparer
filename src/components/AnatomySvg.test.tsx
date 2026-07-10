@@ -241,13 +241,72 @@ describe("AnatomySvg", () => {
       const spacing =
         orientation === "horizontal"
           ? Number(second.getAttribute("x1")) - Number(first.getAttribute("x1"))
-          : Number(second.getAttribute("y1")) - Number(first.getAttribute("y1"));
+          : Number(first.getAttribute("y1")) - Number(second.getAttribute("y1"));
 
       expect(svg).toHaveAttribute("width", String(viewBoxWidth));
       expect(svg).toHaveAttribute("height", String(viewBoxHeight));
       expect(spacing).toBe(20);
     },
   );
+
+  it("labels the horizontal ruler from the pubic-bone origin through the ceiling value", () => {
+    render(
+      <AnatomySvg
+        measurement={DEFAULT_MEASUREMENT}
+        orientation="horizontal"
+        pxPerCm={20}
+        scaleStatus="estimated"
+      />,
+    );
+    const lengthLine = getOnlyLine(screen.getByTestId("length-marker"));
+    const ticks = screen.getAllByTestId("ruler-tick");
+    const zeroTick = ticks.find(
+      (tick) => tick.getAttribute("data-ruler-value") === "0",
+    )!;
+    const finalTick = ticks.find(
+      (tick) => tick.getAttribute("data-ruler-value") === "14",
+    )!;
+
+    expect(ticks).toHaveLength(15);
+    expect(zeroTick).toHaveAttribute("x1", lengthLine.getAttribute("x1"));
+    expect(Number(finalTick.getAttribute("x1"))).toBe(
+      Number(zeroTick.getAttribute("x1")) + 14 * 20,
+    );
+    expect(screen.getByText("0 cm")).toBeInTheDocument();
+    expect(screen.getByText("5 cm")).toBeInTheDocument();
+    expect(screen.getByText("10 cm")).toBeInTheDocument();
+  });
+
+  it("labels the vertical ruler upward from zero at the pubic-bone base", () => {
+    render(
+      <AnatomySvg
+        measurement={DEFAULT_MEASUREMENT}
+        orientation="vertical"
+        pxPerCm={20}
+        scaleStatus="estimated"
+      />,
+    );
+    const lengthLine = getOnlyLine(screen.getByTestId("length-marker"));
+    const ticks = screen.getAllByTestId("ruler-tick");
+    const zeroTick = ticks.find(
+      (tick) => tick.getAttribute("data-ruler-value") === "0",
+    )!;
+    const fiveTick = ticks.find(
+      (tick) => tick.getAttribute("data-ruler-value") === "5",
+    )!;
+    const finalTick = ticks.find(
+      (tick) => tick.getAttribute("data-ruler-value") === "14",
+    )!;
+    const referenceY = Number(lengthLine.getAttribute("y1"));
+
+    expect(ticks).toHaveLength(15);
+    expect(Number(zeroTick.getAttribute("y1"))).toBe(referenceY);
+    expect(Number(fiveTick.getAttribute("y1"))).toBe(referenceY - 5 * 20);
+    expect(Number(finalTick.getAttribute("y1"))).toBe(referenceY - 14 * 20);
+    expect(screen.getByText("0 cm")).toBeInTheDocument();
+    expect(screen.getByText("5 cm")).toBeInTheDocument();
+    expect(screen.getByText("10 cm")).toBeInTheDocument();
+  });
 
   it.each(["horizontal", "vertical"] as const)(
     "expands the %s viewport so valid maximum geometry is not clipped",
