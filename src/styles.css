@@ -35,18 +35,10 @@ select {
 
 .anatomy-svg {
   display: block;
-  width: 100%;
-  max-width: 100%;
+  width: auto;
+  max-width: none;
   height: auto;
   color: #17212b;
-}
-
-.anatomy-svg--horizontal {
-  aspect-ratio: 920 / 520;
-}
-
-.anatomy-svg--vertical {
-  aspect-ratio: 360 / 680;
 }
 
 .anatomy-svg .svg-bg {
@@ -186,6 +178,7 @@ h1 {
 
 .visual-card {
   padding: 12px;
+  overflow: auto;
 }
 
 .side-stack {

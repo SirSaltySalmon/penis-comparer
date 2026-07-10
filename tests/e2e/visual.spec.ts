@@ -51,3 +51,53 @@ test("guide explains pubic-bone-to-tip measurement", async ({ page }) => {
   ).toBeVisible();
   await expect(guide.getByText(/not medical advice/i)).toBeVisible();
 });
+
+test("rendered SVG keeps a one-to-one CSS pixel to viewBox ratio", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const svg = page.locator("svg:visible").first();
+
+  const scale = await svg.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const viewBox = element.viewBox.baseVal;
+    return {
+      x: box.width / viewBox.width,
+      y: box.height / viewBox.height,
+      intrinsicWidth: element.getAttribute("width"),
+      intrinsicHeight: element.getAttribute("height"),
+    };
+  });
+
+  expect(scale.x).toBeCloseTo(1, 6);
+  expect(scale.y).toBeCloseTo(1, 6);
+  expect(Number(scale.intrinsicWidth)).toBeGreaterThan(0);
+  expect(Number(scale.intrinsicHeight)).toBeGreaterThan(0);
+});
+
+test("calibrated ruler and measurement geometry use the same CSS scale", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("slider", { name: /on-screen pixels/i }).fill("280");
+  await page.getByRole("button", { name: /apply calibration/i }).click();
+  const svg = page.locator("svg:visible").first();
+  await expect(svg.getByText("calibrated scale")).toBeVisible();
+
+  const geometry = await svg.evaluate((element) => {
+    const lengthLine = element
+      .querySelector('[data-testid="length-marker"] line')!;
+    const ticks = element.querySelectorAll('[data-testid="ruler-tick"]');
+    const horizontal = element.classList.contains("anatomy-svg--horizontal");
+    const lengthDelta = horizontal
+      ? Number(lengthLine.getAttribute("x2")) - Number(lengthLine.getAttribute("x1"))
+      : Number(lengthLine.getAttribute("y1")) - Number(lengthLine.getAttribute("y2"));
+    const tickDelta = horizontal
+      ? Number(ticks[1].getAttribute("x1")) - Number(ticks[0].getAttribute("x1"))
+      : Number(ticks[1].getAttribute("y1")) - Number(ticks[0].getAttribute("y1"));
+    return { lengthDelta, tickDelta };
+  });
+
+  expect(geometry.lengthDelta / 13.12).toBeCloseTo(geometry.tickDelta, 6);
+  expect(geometry.tickDelta).toBeCloseTo(280 / 8.56, 6);
+});

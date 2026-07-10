@@ -10,24 +10,37 @@ export function CalibrationPanel({
   basePxPerCm,
   onCalibrate,
 }: CalibrationPanelProps) {
-  const [referenceCm, setReferenceCm] = useState(8.56);
+  const [referenceCm, setReferenceCm] = useState("8.56");
   const [measuredPx, setMeasuredPx] = useState(
     Math.round(8.56 * basePxPerCm),
   );
+  const [error, setError] = useState("");
   const referenceLineRef = useRef<HTMLDivElement>(null);
 
   const apply = () => {
     const renderedWidth = referenceLineRef.current?.getBoundingClientRect().width;
     const effectiveMeasuredPx =
-      renderedWidth && renderedWidth > 0 ? renderedWidth : measuredPx;
+      renderedWidth === 0 || renderedWidth === undefined
+        ? measuredPx
+        : renderedWidth;
+    const expectedCm = Number(referenceCm);
+    const factor = referencePixelsToCalibrationFactor({
+      expectedCm,
+      measuredPx: effectiveMeasuredPx,
+      basePxPerCm,
+    });
 
-    onCalibrate(
-      referencePixelsToCalibrationFactor({
-        expectedCm: referenceCm,
-        measuredPx: effectiveMeasuredPx,
-        basePxPerCm,
-      }),
-    );
+    if (factor === null) {
+      setError(
+        !Number.isFinite(expectedCm) || expectedCm <= 0
+          ? "Reference length must be a positive number."
+          : "Measured width must be a positive number.",
+      );
+      return;
+    }
+
+    setError("");
+    onCalibrate(factor);
   };
 
   return (
@@ -46,7 +59,9 @@ export function CalibrationPanel({
             min="1"
             step=".01"
             value={referenceCm}
-            onChange={(event) => setReferenceCm(Number(event.target.value))}
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "calibration-error" : undefined}
+            onChange={(event) => setReferenceCm(event.target.value)}
           />
           <span>cm</span>
         </span>
@@ -70,6 +85,11 @@ export function CalibrationPanel({
       <button type="button" onClick={apply}>
         Apply calibration
       </button>
+      {error && (
+        <p className="field-error" id="calibration-error" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }

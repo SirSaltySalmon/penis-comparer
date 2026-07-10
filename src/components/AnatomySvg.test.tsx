@@ -37,6 +37,28 @@ describe("AnatomySvg", () => {
     return points;
   };
 
+  const markerDelta = (
+    measurement: typeof DEFAULT_MEASUREMENT,
+    orientation: "horizontal" | "vertical",
+    pxPerCm: number,
+  ): number => {
+    const { unmount } = render(
+      <AnatomySvg
+        measurement={measurement}
+        orientation={orientation}
+        pxPerCm={pxPerCm}
+        scaleStatus="estimated"
+      />,
+    );
+    const line = getOnlyLine(screen.getByTestId("length-marker"));
+    const delta =
+      orientation === "horizontal"
+        ? Number(line.getAttribute("x2")) - Number(line.getAttribute("x1"))
+        : Number(line.getAttribute("y1")) - Number(line.getAttribute("y2"));
+    unmount();
+    return delta;
+  };
+
   it("renders the horizontal projection with a pubic-bone-to-tip length marker", () => {
     render(
       <AnatomySvg
@@ -80,7 +102,7 @@ describe("AnatomySvg", () => {
 
     expect(marker).toHaveAttribute("data-measures", "pubic-bone-to-tip");
     expect(maxTipX).toBe(markerEndX);
-    expect(tipPoints).toContainEqual([markerEndX, 260]);
+    expect(tipPoints.some(([x]) => x === markerEndX)).toBe(true);
   });
 
   it("renders the vertical mobile projection with calibrated scale and diameter labels", () => {
@@ -120,7 +142,7 @@ describe("AnatomySvg", () => {
 
     expect(marker).toHaveAttribute("data-measures", "pubic-bone-to-tip");
     expect(minTipY).toBe(markerEndY);
-    expect(tipPoints).toContainEqual([178, markerEndY]);
+    expect(tipPoints.some(([, y]) => y === markerEndY)).toBe(true);
   });
 
   it("keeps the vertical diameter marker inside the body above the pubic-bone reference", () => {
@@ -141,4 +163,132 @@ describe("AnatomySvg", () => {
     expect(markerY).toBe(lineY);
     expect(markerY).toBeLessThan(548);
   });
+
+  it.each(["horizontal", "vertical"] as const)(
+    "keeps %s length geometry monotonic and exact across supported values",
+    (orientation) => {
+      const pxPerCm = 20;
+      const lengths = [1, 13.12, 13.93, 40];
+      const deltas = lengths.map((lengthCm) =>
+        markerDelta(
+          {
+            ...DEFAULT_MEASUREMENT,
+            lengthCm,
+            presetId: "custom",
+          },
+          orientation,
+          pxPerCm,
+        ),
+      );
+
+      expect(deltas).toEqual(lengths.map((length) => length * pxPerCm));
+      expect(deltas).toEqual([...deltas].sort((a, b) => a - b));
+    },
+  );
+
+  it.each(["horizontal", "vertical"] as const)(
+    "uses exact %s diameter geometry across supported values",
+    (orientation) => {
+      const pxPerCm = 20;
+
+      for (const diameterCm of [0.1, 3.71, 20]) {
+        const { unmount } = render(
+          <AnatomySvg
+            measurement={{
+              ...DEFAULT_MEASUREMENT,
+              diameterCm,
+              presetId: "custom",
+            }}
+            orientation={orientation}
+            pxPerCm={pxPerCm}
+            scaleStatus="estimated"
+          />,
+        );
+        const marker = screen.getByTestId("diameter-marker");
+        const line = getOnlyLine(marker);
+        const delta =
+          orientation === "horizontal"
+            ? Number(line.getAttribute("y2")) - Number(line.getAttribute("y1"))
+            : Number(line.getAttribute("x2")) - Number(line.getAttribute("x1"));
+
+        expect(delta).toBeCloseTo(diameterCm * pxPerCm, 8);
+        unmount();
+      }
+    },
+  );
+
+  it.each(["horizontal", "vertical"] as const)(
+    "uses one intrinsic CSS pixel per %s viewBox unit and scale-based ruler ticks",
+    (orientation) => {
+      render(
+        <AnatomySvg
+          measurement={DEFAULT_MEASUREMENT}
+          orientation={orientation}
+          pxPerCm={20}
+          scaleStatus="estimated"
+        />,
+      );
+      const svg = screen.getByRole("img", {
+        name: new RegExp(`${orientation} estimated measurement visual`, "i"),
+      });
+      const [, , viewBoxWidth, viewBoxHeight] = svg
+        .getAttribute("viewBox")!
+        .split(/\s+/)
+        .map(Number);
+      const ticks = screen.getAllByTestId("ruler-tick");
+      const first = ticks[0];
+      const second = ticks[1];
+      const spacing =
+        orientation === "horizontal"
+          ? Number(second.getAttribute("x1")) - Number(first.getAttribute("x1"))
+          : Number(second.getAttribute("y1")) - Number(first.getAttribute("y1"));
+
+      expect(svg).toHaveAttribute("width", String(viewBoxWidth));
+      expect(svg).toHaveAttribute("height", String(viewBoxHeight));
+      expect(spacing).toBe(20);
+    },
+  );
+
+  it.each(["horizontal", "vertical"] as const)(
+    "expands the %s viewport so valid maximum geometry is not clipped",
+    (orientation) => {
+      render(
+        <AnatomySvg
+          measurement={{
+            ...DEFAULT_MEASUREMENT,
+            lengthCm: 40,
+            diameterCm: 20,
+            fatLayerCm: 10,
+            presetId: "custom",
+          }}
+          orientation={orientation}
+          pxPerCm={20}
+          scaleStatus="estimated"
+        />,
+      );
+      const svg = screen.getByRole("img", {
+        name: new RegExp(`${orientation} estimated measurement visual`, "i"),
+      });
+      const [, , width, height] = svg
+        .getAttribute("viewBox")!
+        .split(/\s+/)
+        .map(Number);
+      const marker = screen.getByTestId("length-marker");
+      const diameter = screen.getByTestId("diameter-marker");
+      const markerLine = getOnlyLine(marker);
+      const diameterLine = getOnlyLine(diameter);
+      const coordinates = [markerLine, diameterLine].flatMap((line) =>
+        ["x1", "x2", "y1", "y2"].map((name) =>
+          Number(line.getAttribute(name)),
+        ),
+      );
+      const xs = coordinates.filter((_, index) => index % 4 < 2);
+      const ys = coordinates.filter((_, index) => index % 4 >= 2);
+
+      expect(Math.min(...xs)).toBeGreaterThanOrEqual(0);
+      expect(Math.max(...xs)).toBeLessThanOrEqual(width);
+      expect(Math.min(...ys)).toBeGreaterThanOrEqual(0);
+      expect(Math.max(...ys)).toBeLessThanOrEqual(height);
+    },
+  );
 });

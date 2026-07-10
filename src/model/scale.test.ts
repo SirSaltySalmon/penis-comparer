@@ -34,7 +34,7 @@ describe("scale model", () => {
     expect(factor).toBeCloseTo(expected, 6);
   });
 
-  it("falls back to 1 for invalid reference calibration inputs", () => {
+  it("rejects invalid reference calibration inputs", () => {
     const validInput = {
       expectedCm: 8.56,
       measuredPx: 400,
@@ -61,7 +61,7 @@ describe("scale model", () => {
           ...validInput,
           [field]: value,
         }),
-      ).toBe(1);
+      ).toBeNull();
     }
   });
 

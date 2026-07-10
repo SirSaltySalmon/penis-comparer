@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   PRESETS,
   cmToInches,
@@ -69,15 +69,6 @@ export function MeasurementControls({
     Record<NumericField, number | string>
   >(() => getDisplayedValues(value));
 
-  useEffect(() => {
-    setDisplayedValues(getDisplayedValues(value));
-  }, [
-    value.lengthCm,
-    value.diameterCm,
-    value.fatLayerCm,
-    value.unitMode,
-  ]);
-
   const updateNumber = (field: NumericField, raw: string) => {
     setDisplayedValues((current) => ({ ...current, [field]: raw }));
     const parsed = Number(raw);
@@ -93,14 +84,22 @@ export function MeasurementControls({
     }
 
     const preset = PRESETS[presetId];
-    onChange({
+    const nextValue: MeasurementState = {
       lengthCm: preset.lengthCm,
       diameterCm: preset.diameterCm,
       fatLayerCm: preset.fatLayerCm,
       color: preset.color,
       unitMode: value.unitMode,
       presetId,
-    });
+    };
+    setDisplayedValues(getDisplayedValues(nextValue));
+    onChange(nextValue);
+  };
+
+  const updateUnits = (unitMode: UnitMode) => {
+    const nextValue = { ...value, unitMode };
+    setDisplayedValues(getDisplayedValues(nextValue));
+    onChange(nextValue);
   };
 
   return (
@@ -123,9 +122,7 @@ export function MeasurementControls({
         <select
           aria-label="Units"
           value={value.unitMode}
-          onChange={(event) =>
-            onChange({ ...value, unitMode: event.target.value as UnitMode })
-          }
+          onChange={(event) => updateUnits(event.target.value as UnitMode)}
         >
           <option value="metric">Metric</option>
           <option value="imperial">Imperial</option>

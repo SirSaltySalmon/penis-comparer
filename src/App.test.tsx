@@ -4,6 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 describe("App", () => {
+  const horizontalLengthDelta = (): number => {
+    const line = screen
+      .getAllByTestId("length-marker")[0]
+      .querySelector("line");
+
+    if (!line) throw new Error("Expected horizontal length marker line");
+    return Number(line.getAttribute("x2")) - Number(line.getAttribute("x1"));
+  };
+
   beforeEach(() => {
     window.history.replaceState(null, "", "/");
   });
@@ -106,5 +115,76 @@ describe("App", () => {
       .getAttribute("data-marker-end-x");
 
     expect(secondEndpoint).toBe(firstEndpoint);
+  });
+
+  it("renders the last valid measurement while an invalid draft is displayed", () => {
+    render(<App />);
+    const initialDelta = horizontalLengthDelta();
+    const length = screen.getByRole("spinbutton", { name: /^Length$/ });
+
+    fireEvent.change(length, { target: { value: "" } });
+
+    expect(length).toHaveValue(null);
+    expect(screen.getByText(/length must be greater than 0 cm/i)).toBeVisible();
+    expect(horizontalLengthDelta()).toBe(initialDelta);
+
+    fireEvent.change(length, { target: { value: "14" } });
+
+    expect(horizontalLengthDelta()).toBeGreaterThan(initialDelta);
+  });
+
+  it("clears a successful share status when measurements change", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: /copy share link/i }));
+    expect(await screen.findByRole("status")).toHaveTextContent(/share link copied/i);
+
+    fireEvent.change(screen.getByRole("spinbutton", { name: /^Length$/ }), {
+      target: { value: "14" },
+    });
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("hydrates URL measurements and roundtrips subsequent valid edits", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?l=15&d=4&f=0.5&c=abcdef&u=imperial&p=custom",
+    );
+    render(<App />);
+
+    expect(screen.getByRole("spinbutton", { name: /^Length$/ })).toHaveValue(
+      5.91,
+    );
+    expect(horizontalLengthDelta()).toBeCloseTo(15 * (96 / 2.54), 6);
+
+    fireEvent.change(screen.getByRole("spinbutton", { name: /^Length$/ }), {
+      target: { value: "6" },
+    });
+
+    expect(new URLSearchParams(window.location.search).get("l")).toBe("15.24");
+  });
+
+  it("keeps imperial edits canonical without conversion drift", () => {
+    render(<App />);
+    const units = screen.getByRole("combobox", { name: "Units" });
+    const length = screen.getByRole("spinbutton", { name: /^Length$/ });
+
+    fireEvent.change(units, { target: { value: "imperial" } });
+    fireEvent.change(length, { target: { value: "6" } });
+    expect(new URLSearchParams(window.location.search).get("l")).toBe("15.24");
+
+    fireEvent.change(units, { target: { value: "metric" } });
+    expect(length).toHaveValue(15.24);
+    fireEvent.change(units, { target: { value: "imperial" } });
+
+    expect(length).toHaveValue(6);
+    expect(new URLSearchParams(window.location.search).get("l")).toBe("15.24");
   });
 });

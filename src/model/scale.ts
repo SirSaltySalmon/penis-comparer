@@ -29,7 +29,9 @@ export function getPixelsForCm(cm: number, scale: ScaleInfo): number {
   return cm * scale.pxPerCm;
 }
 
-export function referencePixelsToCalibrationFactor(input: CalibrationInput): number {
+export function referencePixelsToCalibrationFactor(
+  input: CalibrationInput,
+): number | null {
   if (
     !Number.isFinite(input.expectedCm) ||
     !Number.isFinite(input.measuredPx) ||
@@ -38,7 +40,7 @@ export function referencePixelsToCalibrationFactor(input: CalibrationInput): num
     input.measuredPx <= 0 ||
     input.basePxPerCm <= 0
   ) {
-    return 1;
+    return null;
   }
 
   return input.measuredPx / input.expectedCm / input.basePxPerCm;

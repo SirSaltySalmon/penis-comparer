@@ -14,14 +14,17 @@ export default function App() {
     [],
   );
   const [measurement, setMeasurement] = useState(parsed.value);
+  const [renderedMeasurement, setRenderedMeasurement] = useState(parsed.value);
   const [scale, setScale] = useState(baseScale);
   const [shareStatus, setShareStatus] = useState("");
   const validation = validateMeasurement(measurement);
   const hasValidationErrors = Object.keys(validation.errors).length > 0;
 
   useEffect(() => {
+    setShareStatus("");
     if (hasValidationErrors) return;
 
+    setRenderedMeasurement(measurement);
     const query = serializeUrlState(measurement);
     window.history.replaceState(null, "", query);
   }, [hasValidationErrors, measurement]);
@@ -67,14 +70,14 @@ export default function App() {
       <div className="workspace">
         <section className="visual-card" aria-label="measurement visual">
           <AnatomySvg
-            measurement={validation.value}
+            measurement={renderedMeasurement}
             orientation="horizontal"
             pxPerCm={scale.pxPerCm}
             scaleStatus={scale.status}
           />
           <div className="mobile-visual">
             <AnatomySvg
-              measurement={validation.value}
+              measurement={renderedMeasurement}
               orientation="vertical"
               pxPerCm={scale.pxPerCm}
               scaleStatus={scale.status}

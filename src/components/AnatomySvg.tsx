@@ -8,21 +8,10 @@ export interface AnatomySvgProps {
   scaleStatus: ScaleStatus;
 }
 
-const clamp = (value: number, min: number, max: number): number =>
-  Math.min(Math.max(value, min), max);
+const pixelsForCm = (cm: number, pxPerCm: number): number => cm * pxPerCm;
 
-const scaledCm = (
-  cm: number,
-  pxPerCm: number,
-  minPx: number,
-  maxPx: number,
-): number => {
-  if (!Number.isFinite(cm) || !Number.isFinite(pxPerCm) || pxPerCm <= 0) {
-    return minPx;
-  }
-
-  return clamp(cm * pxPerCm, minPx, maxPx);
-};
+const rulerValues = (lengthCm: number): number[] =>
+  Array.from({ length: Math.floor(lengthCm) + 1 }, (_, index) => index);
 
 const statusLabel = (scaleStatus: ScaleStatus): string =>
   `${scaleStatus} scale`;
@@ -52,51 +41,90 @@ function HorizontalProjection({
   scaleStatus,
 }: Omit<AnatomySvgProps, "orientation">) {
   const a11y = getA11yText("horizontal", measurement, scaleStatus);
-  const referenceX = 210;
-  const centerY = 260;
-  const lengthPx = scaledCm(measurement.lengthCm, pxPerCm, 120, 560);
-  const diameterPx = scaledCm(measurement.diameterCm, pxPerCm, 36, 120);
-  const fatPx = scaledCm(measurement.fatLayerCm, pxPerCm, 14, 80);
-  const tipLength = clamp(diameterPx * 0.82, 34, 86);
+  const lengthPx = pixelsForCm(measurement.lengthCm, pxPerCm);
+  const diameterPx = pixelsForCm(measurement.diameterCm, pxPerCm);
+  const fatPx = pixelsForCm(measurement.fatLayerCm, pxPerCm);
+  const referenceX = Math.max(150, fatPx + 60);
+  const centerY = Math.max(220, diameterPx / 2 + 120);
+  const tipLength = Math.min(lengthPx, diameterPx * 0.82);
   const tipX = referenceX + lengthPx;
   const bodyEndX = tipX - tipLength;
   const bodyLength = bodyEndX - referenceX;
   const topY = centerY - diameterPx / 2;
   const bottomY = centerY + diameterPx / 2;
+  const rulerY = bottomY + 70;
+  const rulerEndX =
+    referenceX + Math.ceil(measurement.lengthCm) * pxPerCm;
+  const width = Math.ceil(
+    Math.max(620, rulerEndX + 60, tipX + 150),
+  );
+  const height = Math.ceil(rulerY + 55);
+  const ticks = rulerValues(measurement.lengthCm);
 
   return (
     <svg
       className="anatomy-svg anatomy-svg--horizontal"
-      viewBox="0 0 920 520"
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+      height={height}
       role="img"
       aria-labelledby={`${a11y.titleId} ${a11y.descId}`}
+      data-px-per-cm={pxPerCm}
     >
       <title id={a11y.titleId}>{a11y.title}</title>
       <desc id={a11y.descId}>{a11y.desc}</desc>
-      <rect className="svg-bg" width="920" height="520" rx="18" />
-      <path className="svg-grid-soft" d="M80 140 H840 M80 260 H840 M80 380 H840" />
-      <path
-        className="svg-grid-strong"
-        d="M160 100 V420 M320 100 V420 M480 100 V420 M640 100 V420 M800 100 V420"
+      <rect className="svg-bg" width={width} height={height} rx="18" />
+      <rect
+        className="svg-stage"
+        x="28"
+        y="78"
+        width={width - 56}
+        height={rulerY - 108}
+        rx="14"
       />
-      <rect className="svg-stage" x="86" y="98" width="748" height="324" rx="14" />
+      {ticks.map((value) => {
+        const x = referenceX + value * pxPerCm;
+        return (
+          <line
+            key={`grid-${value}`}
+            className={value % 5 === 0 ? "svg-grid-strong" : "svg-grid-soft"}
+            x1={x}
+            x2={x}
+            y1="90"
+            y2={rulerY - 20}
+          />
+        );
+      })}
 
-      <line className="svg-ruler" x1="120" y1="455" x2="800" y2="455" />
-      <path className="svg-tick" d="M120 445 V465 M290 448 V462 M460 445 V465 M630 448 V462 M800 445 V465" />
-      <text className="svg-small" x="118" y="486">
+      <line className="svg-ruler" x1={referenceX} y1={rulerY} x2={rulerEndX} y2={rulerY} />
+      {ticks.map((value) => {
+        const x = referenceX + value * pxPerCm;
+        return (
+          <line
+            key={`tick-${value}`}
+            data-testid="ruler-tick"
+            className="svg-tick"
+            x1={x}
+            x2={x}
+            y1={rulerY - (value % 5 === 0 ? 10 : 7)}
+            y2={rulerY + (value % 5 === 0 ? 10 : 7)}
+          />
+        );
+      })}
+      <text className="svg-small" x={referenceX} y={rulerY + 34}>
         horizontal ruler
       </text>
 
       <rect
         className="svg-fat"
         x={referenceX - fatPx}
-        y={centerY - 112}
+        y={topY - 35}
         width={fatPx}
-        height="224"
+        height={diameterPx + 70}
         rx="12"
       />
-      <line className="svg-bone" x1={referenceX} y1="130" x2={referenceX} y2="390" />
-      <text className="svg-small" x={referenceX - 82} y="122">
+      <line className="svg-bone" x1={referenceX} y1={topY - 45} x2={referenceX} y2={bottomY + 45} />
+      <text className="svg-small" x={Math.max(12, referenceX - 120)} y={topY - 55}>
         pubic/fat reference
       </text>
 
@@ -106,7 +134,7 @@ function HorizontalProjection({
         y={topY}
         width={bodyLength}
         height={diameterPx}
-        rx={diameterPx / 2}
+        rx={Math.min(diameterPx / 2, bodyLength / 2)}
         fill={measurement.color}
       />
       <path
@@ -122,14 +150,14 @@ function HorizontalProjection({
         data-marker-end-x={tipX}
         data-tip-x={tipX}
       >
-        <line x1={referenceX} y1="162" x2={tipX} y2="162" />
-        <path d={`M ${referenceX} 152 V172 M ${tipX} 152 V172`} />
+        <line x1={referenceX} y1={topY - 28} x2={tipX} y2={topY - 28} />
+        <path d={`M ${referenceX} ${topY - 38} V${topY - 18} M ${tipX} ${topY - 38} V${topY - 18}`} />
       </g>
-      <text className="svg-measure-label" x={(referenceX + tipX) / 2 - 42} y="150">
+      <text className="svg-measure-label" x={(referenceX + tipX) / 2 - 42} y={topY - 40}>
         length to tip
       </text>
 
-      <g className="svg-measure">
+      <g className="svg-measure" data-testid="diameter-marker">
         <line x1={tipX + 38} y1={topY} x2={tipX + 38} y2={bottomY} />
         <path d={`M ${tipX + 28} ${topY} H ${tipX + 48} M ${tipX + 28} ${bottomY} H ${tipX + 48}`} />
       </g>
@@ -137,7 +165,7 @@ function HorizontalProjection({
         diameter
       </text>
 
-      <text className="svg-status" x="690" y="82">
+      <text className="svg-status" x={width - 180} y="50">
         {statusLabel(scaleStatus)}
       </text>
     </svg>
@@ -150,54 +178,89 @@ function VerticalProjection({
   scaleStatus,
 }: Omit<AnatomySvgProps, "orientation">) {
   const a11y = getA11yText("vertical", measurement, scaleStatus);
-  const referenceY = 548;
-  const centerX = 178;
-  const lengthPx = scaledCm(measurement.lengthCm, pxPerCm, 150, 440);
-  const diameterPx = scaledCm(measurement.diameterCm, pxPerCm, 34, 104);
-  const fatPx = scaledCm(measurement.fatLayerCm, pxPerCm, 14, 70);
-  const tipLength = clamp(diameterPx * 0.82, 32, 76);
-  const tipY = referenceY - lengthPx;
+  const lengthPx = pixelsForCm(measurement.lengthCm, pxPerCm);
+  const diameterPx = pixelsForCm(measurement.diameterCm, pxPerCm);
+  const fatPx = pixelsForCm(measurement.fatLayerCm, pxPerCm);
+  const tipY = 100;
+  const referenceY = tipY + lengthPx;
+  const centerX = Math.max(178, diameterPx / 2 + 80);
+  const tipLength = Math.min(lengthPx, diameterPx * 0.82);
   const bodyTopY = tipY + tipLength;
   const bodyLength = referenceY - bodyTopY;
   const leftX = centerX - diameterPx / 2;
   const rightX = centerX + diameterPx / 2;
-  const diameterMarkerY = clamp(
-    bodyTopY + bodyLength / 2,
-    bodyTopY + 24,
-    referenceY - 24,
-  );
+  const diameterMarkerY = tipY + lengthPx / 2;
+  const rulerX = 34;
+  const markerX = rightX + 45;
+  const width = Math.ceil(Math.max(360, markerX + 90));
+  const height = Math.ceil(referenceY + fatPx + 80);
+  const ticks = rulerValues(measurement.lengthCm);
 
   return (
     <svg
       className="anatomy-svg anatomy-svg--vertical"
-      viewBox="0 0 360 680"
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+      height={height}
       role="img"
       aria-labelledby={`${a11y.titleId} ${a11y.descId}`}
       data-testid="mobile-projection"
+      data-px-per-cm={pxPerCm}
     >
       <title id={a11y.titleId}>{a11y.title}</title>
       <desc id={a11y.descId}>{a11y.desc}</desc>
-      <rect className="svg-bg" width="360" height="680" rx="18" />
-      <path className="svg-grid-soft" d="M54 160 H306 M54 300 H306 M54 440 H306" />
-      <path className="svg-grid-strong" d="M92 96 V594 M178 96 V594 M264 96 V594" />
-      <rect className="svg-stage" x="42" y="80" width="276" height="536" rx="14" />
+      <rect className="svg-bg" width={width} height={height} rx="18" />
+      <rect
+        className="svg-stage"
+        x="54"
+        y="78"
+        width={width - 82}
+        height={referenceY - 48}
+        rx="14"
+      />
+      {ticks.map((value) => {
+        const y = tipY + value * pxPerCm;
+        return (
+          <line
+            key={`grid-${value}`}
+            className={value % 5 === 0 ? "svg-grid-strong" : "svg-grid-soft"}
+            x1="54"
+            x2={width - 28}
+            y1={y}
+            y2={y}
+          />
+        );
+      })}
 
-      <line className="svg-ruler" x1="34" y1="100" x2="34" y2="590" />
-      <path className="svg-tick" d="M24 100 H44 M27 222 H41 M24 344 H44 M27 466 H41 M24 588 H44" />
-      <text className="svg-small" x="58" y="104">
+      <line className="svg-ruler" x1={rulerX} y1={tipY} x2={rulerX} y2={referenceY} />
+      {ticks.map((value) => {
+        const y = tipY + value * pxPerCm;
+        return (
+          <line
+            key={`tick-${value}`}
+            data-testid="ruler-tick"
+            className="svg-tick"
+            x1={rulerX - (value % 5 === 0 ? 10 : 7)}
+            x2={rulerX + (value % 5 === 0 ? 10 : 7)}
+            y1={y}
+            y2={y}
+          />
+        );
+      })}
+      <text className="svg-small" x="58" y={tipY + 4}>
         vertical ruler
       </text>
 
       <rect
         className="svg-fat"
-        x="74"
+        x={leftX - 35}
         y={referenceY}
-        width="208"
+        width={diameterPx + 70}
         height={fatPx}
         rx="12"
       />
-      <line className="svg-bone" x1="74" y1={referenceY} x2="282" y2={referenceY} />
-      <text className="svg-small" x="92" y={referenceY + fatPx + 28}>
+      <line className="svg-bone" x1={leftX - 45} y1={referenceY} x2={rightX + 45} y2={referenceY} />
+      <text className="svg-small" x={leftX} y={referenceY + fatPx + 28}>
         pubic/fat reference
       </text>
 
@@ -207,7 +270,7 @@ function VerticalProjection({
         y={bodyTopY}
         width={diameterPx}
         height={bodyLength}
-        rx={diameterPx / 2}
+        rx={Math.min(diameterPx / 2, bodyLength / 2)}
         fill={measurement.color}
       />
       <path
@@ -223,10 +286,10 @@ function VerticalProjection({
         data-marker-end-y={tipY}
         data-tip-y={tipY}
       >
-        <line x1="304" y1={referenceY} x2="304" y2={tipY} />
-        <path d={`M 294 ${referenceY} H314 M294 ${tipY} H314`} />
+        <line x1={markerX} y1={referenceY} x2={markerX} y2={tipY} />
+        <path d={`M ${markerX - 10} ${referenceY} H${markerX + 10} M${markerX - 10} ${tipY} H${markerX + 10}`} />
       </g>
-      <text className="svg-measure-label" x="210" y={(referenceY + tipY) / 2}>
+      <text className="svg-measure-label" x={rightX + 12} y={(referenceY + tipY) / 2 - 16}>
         length to tip
       </text>
 
@@ -242,7 +305,7 @@ function VerticalProjection({
         diameter
       </text>
 
-      <text className="svg-status" x="176" y="52">
+      <text className="svg-status" x={width - 184} y="52">
         {statusLabel(scaleStatus)}
       </text>
     </svg>
