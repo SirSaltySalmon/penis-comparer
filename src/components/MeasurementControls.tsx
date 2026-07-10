@@ -18,10 +18,22 @@ export interface MeasurementControlsProps {
 
 type NumericField = "lengthCm" | "diameterCm" | "fatLayerCm";
 
-const numericFields: Array<{ field: NumericField; label: string }> = [
-  { field: "lengthCm", label: "Length" },
-  { field: "diameterCm", label: "Diameter" },
-  { field: "fatLayerCm", label: "Fat layer" },
+const numericFields: Array<{
+  field: NumericField;
+  label: string;
+  inputId: string;
+}> = [
+  { field: "lengthCm", label: "Length", inputId: "measurement-length" },
+  {
+    field: "diameterCm",
+    label: "Diameter",
+    inputId: "measurement-diameter",
+  },
+  {
+    field: "fatLayerCm",
+    label: "Fat layer",
+    inputId: "measurement-fat-layer",
+  },
 ];
 
 const roundToTwoDecimals = (value: number): number =>
@@ -120,28 +132,42 @@ export function MeasurementControls({
         </select>
       </label>
 
-      {numericFields.map(({ field, label }) => (
-        <label key={field}>
-          {label}
-          <span className="input-with-unit">
-            <input
-              aria-label={label}
-              type="number"
-              min="0"
-              step="0.1"
-              value={displayedValues[field]}
-              onChange={(event) => updateNumber(field, event.target.value)}
-            />
-            <span>{unitLabel}</span>
-          </span>
-          {errors[field] && <span className="field-error">{errors[field]}</span>}
-        </label>
-      ))}
+      {numericFields.map(({ field, label, inputId }) => {
+        const errorId = `${inputId}-error`;
 
-      <label>
+        return (
+          <label key={field} htmlFor={inputId}>
+            {label}
+            <span className="input-with-unit">
+              <input
+                id={inputId}
+                aria-label={label}
+                aria-invalid={Boolean(errors[field])}
+                aria-describedby={errors[field] ? errorId : undefined}
+                type="number"
+                min="0"
+                step="0.1"
+                value={displayedValues[field]}
+                onChange={(event) => updateNumber(field, event.target.value)}
+              />
+              <span>{unitLabel}</span>
+            </span>
+            {errors[field] && (
+              <span className="field-error" id={errorId}>
+                {errors[field]}
+              </span>
+            )}
+          </label>
+        );
+      })}
+
+      <label htmlFor="measurement-color">
         Color
         <input
+          id="measurement-color"
           aria-label="Color"
+          aria-invalid={Boolean(errors.color)}
+          aria-describedby={errors.color ? "measurement-color-error" : undefined}
           type="color"
           value={value.color}
           onChange={(event) =>
@@ -149,7 +175,11 @@ export function MeasurementControls({
           }
         />
       </label>
-      {errors.color && <p className="field-error">{errors.color}</p>}
+      {errors.color && (
+        <p className="field-error" id="measurement-color-error">
+          {errors.color}
+        </p>
+      )}
 
       <button className="primary-action" type="button" onClick={onShare}>
         Copy share link

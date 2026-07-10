@@ -9,24 +9,41 @@ import { parseUrlState, serializeUrlState } from "./model/urlState";
 
 export default function App() {
   const parsed = useMemo(() => parseUrlState(window.location.search), []);
-  const [measurement, setMeasurement] = useState(parsed.value);
-  const [scale, setScale] = useState(() =>
-    estimateScale({ devicePixelRatio: window.devicePixelRatio }),
+  const baseScale = useMemo(
+    () => estimateScale({ devicePixelRatio: window.devicePixelRatio }),
+    [],
   );
+  const [measurement, setMeasurement] = useState(parsed.value);
+  const [scale, setScale] = useState(baseScale);
   const [shareStatus, setShareStatus] = useState("");
   const validation = validateMeasurement(measurement);
-  const basePxPerCm = estimateScale().pxPerCm;
+  const hasValidationErrors = Object.keys(validation.errors).length > 0;
 
   useEffect(() => {
+    if (hasValidationErrors) return;
+
     const query = serializeUrlState(measurement);
     window.history.replaceState(null, "", query);
-  }, [measurement]);
+  }, [hasValidationErrors, measurement]);
 
   const share = async () => {
+    if (hasValidationErrors) {
+      setShareStatus(
+        "Fix invalid measurements before copying a share link.",
+      );
+      return;
+    }
+
     const query = serializeUrlState(measurement);
     const shareUrl = `${window.location.origin}${window.location.pathname}${query}`;
-    await navigator.clipboard.writeText(shareUrl);
-    setShareStatus("Share link copied.");
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareStatus("Share link copied.");
+    } catch {
+      setShareStatus(
+        "Could not copy the share link. Copy it from the address bar instead.",
+      );
+    }
   };
 
   return (
@@ -72,15 +89,19 @@ export default function App() {
             onChange={setMeasurement}
             onShare={share}
           />
-          {shareStatus && <p className="notice">{shareStatus}</p>}
+          {shareStatus && (
+            <p className="notice" role="status" aria-live="polite">
+              {shareStatus}
+            </p>
+          )}
           <GuideDrawer />
         </aside>
       </div>
 
       <CalibrationPanel
-        basePxPerCm={basePxPerCm}
+        basePxPerCm={baseScale.pxPerCm}
         onCalibrate={(factor) =>
-          setScale((current) => applyCalibration(current, factor))
+          setScale(applyCalibration(baseScale, factor))
         }
       />
 

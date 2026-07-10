@@ -8,12 +8,14 @@ export function GuideDrawer() {
       <button
         className="guide__toggle"
         type="button"
+        aria-expanded={open}
+        aria-controls="measurement-guide-body"
         onClick={() => setOpen((current) => !current)}
       >
         How to measure
       </button>
       {open && (
-        <div className="guide__body">
+        <div className="guide__body" id="measurement-guide-body">
           <p>
             This adult-only educational tool is a visualization, not medical advice.
           </p>
