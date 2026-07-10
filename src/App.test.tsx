@@ -12,6 +12,18 @@ describe("App", () => {
     vi.restoreAllMocks();
   });
 
+  it("links the cited studies from the educational source note", () => {
+    render(<App />);
+
+    expect(
+      screen.getByRole("link", { name: "Veale et al. 2015" }),
+    ).toHaveAttribute("href", "https://pubmed.ncbi.nlm.nih.gov/25487360/");
+    expect(
+      screen.getByRole("link", { name: "Belladelli et al. 2023" }),
+    ).toHaveAttribute("href", "https://pubmed.ncbi.nlm.nih.gov/36792094/");
+    expect(screen.getByText(/educational visualization only/i)).toBeVisible();
+  });
+
   it("does not replace history with invalid measurement values", async () => {
     const replaceState = vi.spyOn(window.history, "replaceState");
     render(<App />);

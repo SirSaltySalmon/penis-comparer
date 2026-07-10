@@ -45,8 +45,9 @@ test("guide explains pubic-bone-to-tip measurement", async ({ page }) => {
   await page.goto("/");
 
   await page.getByRole("button", { name: "How to measure" }).click();
+  const guide = page.locator("#measurement-guide-body");
   await expect(
-    page.getByText(/pubic bone to the furthest tip/i),
+    guide.getByText(/pubic bone to the furthest tip/i),
   ).toBeVisible();
-  await expect(page.getByText(/not medical advice/i)).toBeVisible();
+  await expect(guide.getByText(/not medical advice/i)).toBeVisible();
 });

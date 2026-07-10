@@ -106,8 +106,14 @@ export default function App() {
       />
 
       <footer className="source-note">
-        Default average: Veale et al. 2015. Alternate length benchmark: Belladelli
-        et al. 2023.
+        <a href="https://pubmed.ncbi.nlm.nih.gov/25487360/" target="_blank" rel="noreferrer">
+          Veale et al. 2015
+        </a>
+        <span> default average. </span>
+        <a href="https://pubmed.ncbi.nlm.nih.gov/36792094/" target="_blank" rel="noreferrer">
+          Belladelli et al. 2023
+        </a>
+        <span> optional length benchmark. Educational visualization only, not medical advice.</span>
       </footer>
     </main>
   );
