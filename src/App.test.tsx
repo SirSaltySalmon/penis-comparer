@@ -15,12 +15,23 @@ describe("App", () => {
   it("links the cited studies from the educational source note", () => {
     render(<App />);
 
-    expect(
-      screen.getByRole("link", { name: "Veale et al. 2015" }),
-    ).toHaveAttribute("href", "https://pubmed.ncbi.nlm.nih.gov/25487360/");
-    expect(
-      screen.getByRole("link", { name: "Belladelli et al. 2023" }),
-    ).toHaveAttribute("href", "https://pubmed.ncbi.nlm.nih.gov/36792094/");
+    const vealeLink = screen.getByRole("link", { name: "Veale et al. 2015" });
+    const belladelliLink = screen.getByRole("link", {
+      name: "Belladelli et al. 2023",
+    });
+
+    expect(vealeLink).toHaveAttribute(
+      "href",
+      "https://pubmed.ncbi.nlm.nih.gov/25487360/",
+    );
+    expect(vealeLink).toHaveAttribute("target", "_blank");
+    expect(vealeLink).toHaveAttribute("rel", "noreferrer");
+    expect(belladelliLink).toHaveAttribute(
+      "href",
+      "https://pubmed.ncbi.nlm.nih.gov/36792094/",
+    );
+    expect(belladelliLink).toHaveAttribute("target", "_blank");
+    expect(belladelliLink).toHaveAttribute("rel", "noreferrer");
     expect(screen.getByText(/educational visualization only/i)).toBeVisible();
   });
 
