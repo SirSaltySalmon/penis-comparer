@@ -568,8 +568,14 @@ h2 {
     display: none;
   }
 
+  .visual-viewport {
+    display: flex;
+    justify-content: center;
+  }
+
   .mobile-visual {
-    display: block;
+    display: flex;
+    justify-content: center;
   }
 
   .visual-card {

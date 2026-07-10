@@ -1,6 +1,6 @@
-# Adult Measurement Visualizer
+# Penis Visualizer
 
-Client-side React app for adult-only educational measurement visualization.
+Client-side React app for visualizing a penis to scale.
 
 The app renders an abstract 2D SVG visual with:
 
@@ -8,8 +8,8 @@ The app renders an abstract 2D SVG visual with:
 - optional calibration,
 - metric and imperial units,
 - shareable URL query parameters,
-- Veale et al. 2015 default average preset,
-- optional Belladelli et al. 2023 length benchmark,
+- default size derived from Veale et al. 2015,
+- customizable colors,
 - mobile portrait projection where length is measured from pubic bone to furthest tip.
 
 ## Development
@@ -29,4 +29,4 @@ npm run e2e
 
 ## Notes
 
-The visual is abstract and non-erotic. The app is not medical advice. Browser physical screen-size detection is not reliable, so scale is estimated until calibrated.
+The visual is abstract and non-erotic. The app is not medical advice. Browser physical screen-size detection is not 100% reliable, so scale is estimated until calibrated.

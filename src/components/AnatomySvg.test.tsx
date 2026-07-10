@@ -109,7 +109,7 @@ describe("AnatomySvg", () => {
     expect(tipPoints.some(([x]) => x === markerEndX)).toBe(true);
   });
 
-  it("renders the vertical mobile projection with calibrated scale and diameter labels", () => {
+  it("renders the vertical mobile projection with diameter labels", () => {
     render(
       <AnatomySvg
         measurement={DEFAULT_MEASUREMENT}
@@ -123,7 +123,6 @@ describe("AnatomySvg", () => {
       "anatomy-svg",
       "anatomy-svg--vertical",
     );
-    expect(screen.getByText("calibrated scale")).toBeVisible();
     expect(screen.getByText("diameter")).toBeVisible();
   });
 
@@ -297,7 +296,7 @@ describe("AnatomySvg", () => {
     expect(tipPoints.some(([, y]) => y === markerEndY)).toBe(true);
   });
 
-  it("keeps the vertical diameter marker inside the body above the pubic-bone reference", () => {
+  it("places the vertical diameter marker just past the tip", () => {
     render(
       <AnatomySvg
         measurement={edgeCaseMeasurement}
@@ -309,11 +308,16 @@ describe("AnatomySvg", () => {
 
     const marker = screen.getByTestId("diameter-marker");
     const markerLine = getOnlyLine(marker);
+    const tipShape = screen.getByTestId("tip-shape");
     const markerY = Number(marker.getAttribute("data-marker-y"));
     const lineY = Number(markerLine.getAttribute("y1"));
+    const minTipY = Math.min(
+      ...getPathPoints(tipShape).map(([, y]) => y),
+    );
 
     expect(markerY).toBe(lineY);
-    expect(markerY).toBeLessThan(548);
+    expect(markerY).toBe(minTipY - 38);
+    expect(markerY).toBeLessThan(minTipY);
   });
 
   it.each(["horizontal", "vertical"] as const)(

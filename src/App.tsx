@@ -180,10 +180,10 @@ export default function App() {
     <main className="app-shell">
       <header className="hero">
         <div>
-          <p className="eyebrow">Penis Visualizer</p>
+          <p className="eyebrow"><a href="https://github.com/SirSaltySalmon/penis-comparer">GitHub</a></p>
           <h1>Penis Visualizer</h1>
           <p className="lede">
-            Visualize a penis to scale, to validate claims or compare your penis to the average penis.
+            Renders a penis to scale, to validate claims or compare your penis to the average penis.
           </p>
         </div>
         {parsed.invalidFields.length > 0 && (

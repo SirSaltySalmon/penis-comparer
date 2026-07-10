@@ -299,9 +299,9 @@ function VerticalProjection({
   const rulerOverhangPx =
     (rulerMaximum - ruler.length) * ruler.pxPerUnit;
   const tipY = Math.max(
-    100,
-    rulerOverhangPx + 40,
-    10 * pxPerCm - lengthPx + 80,
+    120,
+    rulerOverhangPx + 60,
+    10 * pxPerCm - lengthPx + 100,
   );
   const referenceY = tipY + lengthPx;
   const centerX = Math.max(140, diameterPx / 2 + 70);
@@ -310,7 +310,8 @@ function VerticalProjection({
   const bodyLength = referenceY - bodyTopY;
   const leftX = centerX - diameterPx / 2;
   const rightX = centerX + diameterPx / 2;
-  const diameterMarkerY = tipY + lengthPx / 2;
+  // Mirror horizontal: diameter sits just past the tip, not mid-shaft.
+  const diameterMarkerY = tipY - 38;
   const rulerX = 16;
   const markerX = rightX + 20;
   const width = Math.ceil(Math.max(280, markerX + 30, rightX + 50));
@@ -471,10 +472,6 @@ function VerticalProjection({
         textAnchor="middle"
       >
         diameter
-      </text>
-
-      <text className="svg-status" x={width - 184} y="52">
-        {statusLabel(scaleStatus)}
       </text>
     </svg>
   );
