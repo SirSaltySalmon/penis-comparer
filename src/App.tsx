@@ -355,7 +355,8 @@ export default function App() {
         <a href="https://pubmed.ncbi.nlm.nih.gov/36792094/" target="_blank" rel="noreferrer">
           Belladelli et al. 2023
         </a>
-        <span> optional length benchmark. Educational visualization only, not medical advice.</span>
+        <span> optional alternative source. Educational visualization only, not medical advice.</span>
+        <span>This website collects no data and is completely client-side. It uses cookies to store your calibration settings on revist.</span>
       </footer>
     </main>
   );
