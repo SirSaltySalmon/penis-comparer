@@ -356,7 +356,7 @@ export default function App() {
           Belladelli et al. 2023
         </a>
         <span> optional alternative source. Educational visualization only, not medical advice.</span>
-        <span>This website collects no data and is completely client-side. It uses cookies to store your calibration settings on revist.</span>
+        <span> This website collects no data and is completely client-side. It uses cookies to store your calibration settings on revist.</span>
       </footer>
     </main>
   );
