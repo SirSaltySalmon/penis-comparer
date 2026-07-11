@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { referencePixelsToCalibrationFactor } from "../model/scale";
 
 export interface CalibrationPanelProps {
@@ -18,11 +18,14 @@ export function CalibrationPanel({
   const referenceLineRef = useRef<HTMLDivElement>(null);
 
   const apply = () => {
-    const renderedWidth = referenceLineRef.current?.getBoundingClientRect().width;
+    const renderedRect = referenceLineRef.current?.getBoundingClientRect();
+    const renderedLength = renderedRect
+      ? Math.max(renderedRect.width, renderedRect.height)
+      : undefined;
     const effectiveMeasuredPx =
-      renderedWidth === 0 || renderedWidth === undefined
+      renderedLength === 0 || renderedLength === undefined
         ? measuredPx
-        : renderedWidth;
+        : renderedLength;
     const expectedCm = Number(referenceCm);
     const factor = referencePixelsToCalibrationFactor({
       expectedCm,
@@ -80,7 +83,7 @@ export function CalibrationPanel({
       <div
         ref={referenceLineRef}
         className="reference-line"
-        style={{ width: `${measuredPx}px` }}
+        style={{ "--reference-length": `${measuredPx}px` } as CSSProperties}
       />
       <button type="button" onClick={apply}>
         Apply calibration

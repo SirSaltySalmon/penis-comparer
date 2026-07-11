@@ -37,6 +37,37 @@ describe("CalibrationPanel", () => {
     rectSpy.mockRestore();
   });
 
+  it("calibrates from the reference line's rendered height on mobile", async () => {
+    const user = userEvent.setup();
+    const onCalibrate = vi.fn();
+    const basePxPerCm = 96 / 2.54;
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue({
+        width: 30,
+        height: 240,
+        top: 0,
+        right: 30,
+        bottom: 240,
+        left: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+
+    render(
+      <CalibrationPanel
+        basePxPerCm={basePxPerCm}
+        onCalibrate={onCalibrate}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /apply calibration/i }));
+
+    expect(onCalibrate).toHaveBeenCalledWith(240 / 8.56 / basePxPerCm);
+    rectSpy.mockRestore();
+  });
+
   it("keeps calibration estimated when the reference length is empty", async () => {
     const user = userEvent.setup();
     const onCalibrate = vi.fn();

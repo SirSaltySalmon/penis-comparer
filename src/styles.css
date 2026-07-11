@@ -565,7 +565,7 @@ h2 {
 }
 
 .reference-line {
-  max-width: 100%;
+  width: min(var(--reference-length), 100%);
   height: 30px;
   border-radius: 0;
   background: var(--muted-foreground);
@@ -650,5 +650,12 @@ h2 {
 
   .calibration {
     padding-top: 32px;
+  }
+
+  .calibration .reference-line {
+    width: 30px;
+    height: var(--reference-length);
+    max-height: none;
+    justify-self: center;
   }
 }
